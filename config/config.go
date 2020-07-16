@@ -25,9 +25,7 @@ func LoadConfig() {
 	doOnce.Do(
 		func() {
 			MyConfig = &Configuration{
-				Rootpath:         "./",
-				EthereumEndpoint: "https://ropsten.infura.io/v3/7de903803c31428bbdd1186107a2d660",
-				PrivateKey:       "48218b47d9afba13df85e4b29e4e0bb73ae526cdebb316738832be607e7c7174",
+				Rootpath: "./",
 			}
 
 		})
