@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"math/big"
 	"net/http"
@@ -259,6 +260,43 @@ func (ctr *Controller) VerifyMultiple(c *gin.Context) {
 
 	sendJsonNotFound(c, "file is not certified", errors.New(f.Filename+" not found."))
 	return
+}
+
+func (ctr *Controller) GetFile(c *gin.Context) {
+	txhash := c.Param("txhash")
+	// get the informations from the tx
+	tx, isPending, err := client.EthClient.TransactionByHash(context.Background(), common.HexToHash(txhash))
+	if err != nil {
+		sendJsonNotFound(c, "Can not get the transaction informations", err) // change to 404
+		return
+	}
+	if isPending {
+		c.JSON(http.StatusNotAcceptable, gin.H{
+			"message": "Transaction is still mining.",
+		})
+		return
+	}
+	data := tx.Data()
+	hashInBlockChain := fmt.Sprintf("%x", data)
+	d := filepath.Join(config.MyConfig.GetFilepaths(), hashInBlockChain)
+	files, err := ioutil.ReadDir(d)
+	if err != nil {
+		sendJsonNotFound(c, "file from tx "+txhash+" not found.", err)
+		return
+	}
+
+	if len(files) == 0 {
+		sendJsonNotFound(c, "file from tx "+txhash+" not found.", err)
+		return
+	}
+
+	fileName := files[0].Name()
+	targetPath := filepath.Join(d, fileName)
+	c.Header("Content-Description", "File Transfer")
+	c.Header("Content-Transfer-Encoding", "binary")
+	c.Header("Content-Disposition", "attachment; filename="+fileName)
+	c.Header("Content-Type", "application/octet-stream")
+	c.File(targetPath)
 }
 
 func readFromFile(filePath string) (content []merkleHexa, err error) {

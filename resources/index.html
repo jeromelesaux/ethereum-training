@@ -94,6 +94,25 @@
                 }
             });
         }
+
+        function getfile() {
+            var txhash = document.getElementById('getfilehash').value.trim();
+            var url = "/txhash/" + txhash;
+            console.log(url);
+           
+            $.ajax({
+                type: "GET",
+                url: url,
+                success: function (response) {
+                    window.location=url;           
+                },
+                error: function (err) {
+                    var obj = JSON.parse(JSON.stringify(err.responseJSON));
+                    console.log(obj);
+                    raiseAlert("Error your document is not found, <br>  message: " + obj.error);
+                }
+            });
+        }
     </script>
     <div id="alerts" class="alert alert-danger" role="alert" style="display:none;"></div>
     <div class="container">
@@ -102,6 +121,7 @@
                 <a class="nav-item nav-link active" href="#home" data-toggle="tab">main page</a>
                 <a href="#certificate" class="nav-item nav-link" data-toggle="tab">certify one document</a>
                 <a href="#verify" class="nav-item nav-link" data-toggle="tab">verify one document</a>
+                <a href="#getfile" class="nav-item nav-link" data-toggle="tab">get the file from tx</a>
             </nav>
 
             <div id="my-tab-content" class="tab-content">
@@ -148,9 +168,21 @@
                     </form>
 
                 </div>
-
+                <div class="tab-pane" id="getfile">
+                    Get your certified file..<br><br><br>
+                    <div class="form-group">
+                        <label for="documenthash">Hash of the document</label>
+                        <input type="text" class="form-control" id="getfilehash" aria-describedby="hashHelp"
+                            placeholder="Enter the certification hash of your document.">
+                        <small id="hashHelp" class="form-text text-muted">Please enter the certification hash of
+                            your document.</small>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="getfile()">Get your file</button>
+                </div>
             </div>
+
         </div>
+    </div>
 
 
     </div>

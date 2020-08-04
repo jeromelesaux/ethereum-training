@@ -50,6 +50,7 @@ func main() {
 	router.POST("/verify", controller.Verify)
 	router.POST("/anchormultiple", controller.AnchorMultiple)
 	router.POST("/verifymultiple", controller.VerifyMultiple)
+	router.GET("/txhash/:txhash", controller.GetFile)
 
 	// add static html route
 	root := router.Group("/")
