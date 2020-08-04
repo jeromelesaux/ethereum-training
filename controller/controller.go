@@ -33,10 +33,8 @@ func (ctr *Controller) Anchoring(c *gin.Context) {
 	// get the file from multipart form
 	f, err := c.FormFile("file")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error while getting file multipart header.")
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err,
-		})
+		fmt.Fprintf(os.Stderr, "Error while getting file multipart header. error :%v\n", err)
+		sendJsonError(c, err.Error(), err)
 		return
 	}
 
@@ -57,6 +55,13 @@ func (ctr *Controller) Anchoring(c *gin.Context) {
 		return
 	}
 
+	if err = storeFile(outfile, f.Filename, hexa256); err != nil {
+		if err != nil {
+			sendJsonError(c, "Error cannot store file on local storage "+f.Filename, err)
+			return
+		}
+	}
+
 	txHash, err := sendTransaction(sum256)
 	if err != nil {
 		sendJsonError(c, "Error in ethereum transaction", err)
@@ -71,7 +76,7 @@ func (ctr *Controller) Anchoring(c *gin.Context) {
 }
 
 //
-// curl -v -X POST http://localhost:8080/verify   -F "file=@readme.txt" -f "hash=8753d45d70da590b0841392ac762161ac5230fa63a5b766759e6fd0d33a65631" -H "Content-Type: multipart/form-data"
+// curl -v -X POST http://localhost:8080/verify   -F "file=@readme.txt" -F "txhash=8753d45d70da590b0841392ac762161ac5230fa63a5b766759e6fd0d33a65631" -H "Content-Type: multipart/form-data"
 //
 func (ctr *Controller) Verify(c *gin.Context) {
 
@@ -107,7 +112,7 @@ func (ctr *Controller) Verify(c *gin.Context) {
 	// get the informations from the tx
 	tx, isPending, err := client.EthClient.TransactionByHash(context.Background(), common.HexToHash(txHash))
 	if err != nil {
-		sendJsonError(c, "Can not get the transaction informations", err) // change to 404
+		sendJsonNotFound(c, "Can not get the transaction informations", err) // change to 404
 		return
 	}
 	if isPending {
@@ -398,4 +403,18 @@ func (m *MerkleContent) CalculateHash() ([]byte, error) {
 
 type merkleHexa struct {
 	Hexa string
+}
+
+func storeFile(oldFile, filename, hexa256 string) error {
+	path := filepath.Join(config.MyConfig.GetFilepaths(), hexa256)
+	if err := os.MkdirAll(path, os.ModePerm); err != nil {
+		fmt.Fprintf(os.Stderr, "Cannot create directory [%s] with error :%v\n", path, err)
+		return err
+	}
+	newFile := filepath.Join(path, filename)
+	if err := os.Rename(oldFile, newFile); err != nil {
+		fmt.Fprintf(os.Stderr, "Cannot move file [%s] to [%s] with error :%v\n", oldFile, newFile, err)
+		return err
+	}
+	return nil
 }

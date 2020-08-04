@@ -1,0 +1,159 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Documents certification v1.0</title>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+</head>
+
+<body>
+    <script lang="javascript">
+
+        $(document).on('change', '.custom-file-input', function (event) {
+            $(this).next('.custom-file-label').html(event.target.files[0].name);
+        })
+
+        $('.alert .close').live("click", function (e) {
+            $(this).parent().hide();
+        });
+
+        function raiseAlert(message) {
+            $('#alerts').append(
+                '<div class="alert">' +
+                '<button type="button" class="close" data-dismiss="alert" onclick="closeAlert()">' +
+                '&times;</button>' + message + '</div>');
+            $('#alerts').show();
+        }
+
+        function closeAlert() {
+            $("#alerts").hide();
+        }
+
+
+        function anchorOneFile() {
+            var form = $('#anchoringFile');
+            var formData = new FormData();
+            formData.append('file', document.getElementById('customFile').files[0]);
+            var url = form.attr('action');
+            console.log("url:" + url);
+            document.getElementById('txResponse').innerHTML = "";
+            $.ajax({
+                type: "POST",
+                url: url,
+                contentType: false,
+                processData: false,
+                cache: false,
+                data: formData,
+                success: function (response) {
+                    console.log(response);
+                    var obj = JSON.parse(JSON.stringify(response))
+
+                    document.getElementById('txResponse').append("\nYour transaction hash is : " + obj.tx + " record it, it will be asked for.");
+                    // window.alert(obj.tx);
+                },
+                error: function (err) {
+                    var obj = JSON.parse(JSON.stringify(err));
+                    raiseAlert("Error message: " + obj.error.ErrorString);
+                }
+            });
+        }
+
+        function verifyOneFile() {
+            var form = $('#verifyOnFile');
+            var formData = new FormData();
+            var uploadFile = document.getElementById('customVerifyFile').files[0];
+            var txHash = document.getElementById('documenthash').value.trim();
+            formData.append('file', uploadFile);
+            formData.append('txhash', txHash);
+            var url = form.attr('action');
+            console.log("url:" + url + " with txhash:" + txHash);
+            document.getElementById('checkResponse').innerHTML = "";
+            $.ajax({
+                type: "POST",
+                url: url,
+                contentType: false,
+                processData: false,
+                cache: false,
+                data: formData,
+                success: function (response) {
+                    console.log(response);
+                    var obj = JSON.parse(JSON.stringify(response))
+
+                    document.getElementById('checkResponse').append("\nyour document is ok.");
+                    // window.alert(obj.tx);
+                },
+                error: function (err) {
+                    var obj = JSON.parse(JSON.stringify(err.responseJSON));
+                    console.log(obj);
+                    raiseAlert("Error your document \"" + uploadFile.name + "\" and your hash don't correspond, <br>  message: " + obj.error);
+                }
+            });
+        }
+    </script>
+    <div id="alerts" class="alert alert-danger" role="alert" style="display:none;"></div>
+    <div class="container">
+        <div id="content">
+            <nav class="nav nav-tabs">
+                <a class="nav-item nav-link active" href="#home" data-toggle="tab">main page</a>
+                <a href="#certificate" class="nav-item nav-link" data-toggle="tab">certify one document</a>
+                <a href="#verify" class="nav-item nav-link" data-toggle="tab">verify one document</a>
+            </nav>
+
+            <div id="my-tab-content" class="tab-content">
+                <div class="tab-pane active" id="home">
+                    <center>
+                        <img width="100px" src="https://blog.webnet.fr/wp-content/uploads/2019/02/ethereum-logo.png">
+
+                        <img width="200px" src="logo-innovation-lab-v2.png">
+                        <h2>Welcome to bytel documents Ethereum block chain certifications.</h2>
+                    </center>
+                </div>
+
+
+                <div class="tab-pane" id="certificate">
+                    Certify your document.<br><br><br>
+                    <form id="anchoringFile" action="./anchor" method="POST" enctype="multipart/form-data">
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" id="customFile">
+                            <label class="custom-file-label" for="customFile">Choose file</label>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="anchorOneFile()">Submit</button>
+                        <div id="txResponse"></div>
+                    </form>
+                </div>
+
+                <div class="tab-pane" id="verify">
+                    Check your document..<br><br><br>
+                    <form id="verifyOnFile" action="./verify" method="POST" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="documenthash">Hash of the document</label>
+                            <input type="text" class="form-control" id="documenthash" aria-describedby="hashHelp"
+                                placeholder="Enter the certification hash of your document.">
+                            <small id="hashHelp" class="form-text text-muted">Please enter the certification hash of
+                                your document.</small>
+                        </div>
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" id="customVerifyFile">
+                            <label class="custom-file-label" for="customFile">Choose file</label>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="verifyOneFile()">Submit</button>
+                        <div id="checkResponse">
+
+                        </div>
+                    </form>
+
+                </div>
+
+            </div>
+        </div>
+
+
+    </div>
+</body>
+
+</html>
