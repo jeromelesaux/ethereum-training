@@ -53,7 +53,8 @@
                     console.log(response);
                     var obj = JSON.parse(JSON.stringify(response))
 
-                    document.getElementById('txResponse').append("\nYour transaction hash is : " + obj.tx + " record it, it will be asked for.");
+                    document.getElementById('txResponse').innerHTML += "\nYour transaction hash is : <p style=\"color:red\">" + obj.tx + "</p> record it, it will be asked for.";
+                    document.getElementById('txResponse').innerHTML += "<br>You can check your transaction on <a href=\"https://ropsten.etherscan.io/tx/" + obj.tx + "\" target=\"_blank\">ropsten </a>";
                     // window.alert(obj.tx);
                 },
                 error: function (err) {
@@ -122,7 +123,7 @@
     <div class="container">
         <div id="content">
             <nav class="nav nav-tabs">
-                <a class="nav-item nav-link active" href="#home" data-toggle="tab">main page</a>
+                <a class="nav-item nav-link active" href="#home" data-toggle="tab">Home</a>
                 <a href="#certificate" class="nav-item nav-link" data-toggle="tab">certify one document</a>
                 <a href="#verify" class="nav-item nav-link" data-toggle="tab">verify one document</a>
                 <a href="#getfile" class="nav-item nav-link" data-toggle="tab">get the file from tx</a>
