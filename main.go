@@ -36,7 +36,9 @@ func main() {
 		config.LoadConfigFile(configurationFilepath)
 	} else {
 		config.LoadConfig()
+
 	}
+	controller.LoadCredentials()
 
 	// authenticate on ethereum platforms
 	client.Authenticate()

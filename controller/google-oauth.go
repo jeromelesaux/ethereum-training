@@ -91,7 +91,7 @@ type Credentials struct {
 	Csecret string `json:"csecret"`
 }
 
-func init() {
+func LoadCredentials() {
 	file, err := ioutil.ReadFile("./creds.json")
 	if err != nil {
 		log.Printf("File error: %v\n", err)
@@ -106,7 +106,7 @@ func init() {
 	conf = &oauth2.Config{
 		ClientID:     cred.Cid,
 		ClientSecret: cred.Csecret,
-		RedirectURL:  serverUrl + "/auth",
+		RedirectURL:  serverURL + "/auth",
 		Scopes: []string{
 			"https://www.googleapis.com/auth/userinfo.email", // You have to select your own scope from here -> https://developers.google.com/identity/protocols/googlescopes#google_sign-in
 		},
