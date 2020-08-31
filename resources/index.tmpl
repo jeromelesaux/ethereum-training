@@ -1,11 +1,12 @@
+<!DOCTYPE html>
 <html>
 
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Documents certification v1.1</title>
-
+    <title>Documents certification v1.2</title>
+    <link rel="icon" sizes="96x96" type="image/png" href="https://www.bouyguestelecom.fr/skin/frontend/bytel/default/medias/images/favicons/favicon-96x96.png">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
@@ -22,6 +23,7 @@
             $(this).parent().hide();
         });
 
+        
         function raiseAlert(message) {
             $('#alerts').append(
                 '<div class="alert">' +
@@ -42,6 +44,7 @@
             var url = form.attr('action');
             console.log("url:" + url);
             document.getElementById('txResponse').innerHTML = "";
+          
             $.ajax({
                 type: "POST",
                 url: url,
@@ -58,8 +61,12 @@
                     // window.alert(obj.tx);
                 },
                 error: function (err) {
-                    var obj = JSON.parse(JSON.stringify(err));
-                    raiseAlert("Error message: " + obj.error.ErrorString);
+                    raiseAlert("Error message: error server");
+                },
+                statusCode:{
+                    401: function() {
+                        raiseAlert("Error message:Please login with Google Account.");
+                    }
                 }
             });
         }
@@ -102,7 +109,7 @@
 
         function getfile() {
             var txhash = document.getElementById('getfilehash').value.trim();
-            var url = "/txhash/" + txhash;
+            var url = "/api/txhash/" + txhash;
             console.log(url);
 
             $.ajax({
@@ -112,9 +119,19 @@
                     window.location = url;
                 },
                 error: function (err) {
-                    var obj = JSON.parse(JSON.stringify(err.responseJSON));
+                    var obj = JSON.parse(JSON.stringify(err));
                     console.log(obj);
-                    raiseAlert("Error your document is not found, <br>  message: " + obj.error);
+                    if (obj.responseJSON) {
+                        raiseAlert("Error <br>  message: " + obj.responseJSON.error);
+                    } else {
+                        raiseAlert("Error your document is not found, <br>");
+                    }
+
+                },
+                statusCode:{
+                    401: function() {
+                        raiseAlert("Error message:Please login with Google Account.");
+                    }
                 }
             });
         }
@@ -142,19 +159,20 @@
 
                 <div class="tab-pane" id="certificate">
                     Certify your document.<br><br><br>
-                    <form id="anchoringFile" action="./anchor" method="POST" enctype="multipart/form-data">
+                    <form id="anchoringFile" action="/api/anchor" method="POST" enctype="multipart/form-data">
                         <div class="custom-file">
                             <input type="file" class="custom-file-input" id="customFile">
                             <label class="custom-file-label" for="customFile">Choose file</label>
                         </div>
                         <button type="button" class="btn btn-primary" onclick="anchorOneFile()">Submit</button>
+                        <a href="/login"><button type="button" class="btn btn-primary">Login</button></a>
                         <div id="txResponse"></div>
                     </form>
                 </div>
 
                 <div class="tab-pane" id="verify">
                     Check your document..<br><br><br>
-                    <form id="verifyOnFile" action="./verify" method="POST" enctype="multipart/form-data">
+                    <form id="verifyOnFile" action="/verify" method="POST" enctype="multipart/form-data">
                         <div class="form-group">
                             <label for="documenthash">Hash of the document</label>
                             <input type="text" class="form-control" id="documenthash" aria-describedby="hashHelp"

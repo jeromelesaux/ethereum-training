@@ -3,13 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
+	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jeromelesaux/ethereum-training/client"
 	"github.com/jeromelesaux/ethereum-training/config"
 	"github.com/jeromelesaux/ethereum-training/controller"
+	"github.com/jeromelesaux/ethereum-training/token"
 )
 
 var (
@@ -38,31 +41,58 @@ func main() {
 	// authenticate on ethereum platforms
 	client.Authenticate()
 
+	// creation des cookies stores et token pour google oauth
+	token, err := token.RandToken(64)
+	if err != nil {
+		log.Fatal("unable to generate random token: ", err)
+	}
+	store := sessions.NewCookieStore([]byte(token))
+	store.Options(sessions.Options{
+		Path:   "/",
+		MaxAge: 86400 * 7,
+	})
+
 	// router creation
 	router := gin.Default()
 
+	// google oauth controller
+	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
+	router.Use(sessions.Sessions("goquestsession", store))
+
 	// controller with routes definition
 	controller := &controller.Controller{}
-	router.LoadHTMLGlob("resources/*.html") // add static html files
+	//router.LoadHTMLGlob("resources/*.html") // add static html files
+	router.LoadHTMLGlob("resources/*.tmpl") // add static html files
 	router.StaticFile("/logo-innovation-lab-v2.png", "resources/logo-innovation-lab-v2.png")
 	// add certifications api
-	router.POST("/anchor", controller.Anchoring)
-	router.POST("/verify", controller.Verify)
-	router.POST("/anchormultiple", controller.AnchorMultiple)
-	router.POST("/verifymultiple", controller.VerifyMultiple)
-	router.GET("/txhash/:txhash", controller.GetFile)
 
+	router.POST("/verify", controller.Verify)
+
+	router.POST("/verifymultiple", controller.VerifyMultiple)
+
+	router.GET("/login", controller.LoginHandler)
+	router.GET("/auth", controller.AuthHandler)
 	// add static html route
 	root := router.Group("/")
 	root.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", nil)
+		c.HTML(http.StatusOK, "index.tmpl", nil)
 	})
 
+	authorized := router.Group("/api")
+	{
+		authorized.Use(controller.AuthorizeRequest())
+		authorized.POST("/anchor", controller.Anchoring)
+		authorized.POST("/anchormultiple", controller.AnchorMultiple)
+		authorized.GET("/txhash/:txhash", controller.GetFile)
+
+	}
 	// start server at port 8080
 	if err := router.Run(":8080"); err != nil {
 		fmt.Fprintf(os.Stderr, "Can not start server error :%v\n", err)
 		os.Exit(-1)
 	}
+
 }
 
 func help() {

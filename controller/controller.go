@@ -18,10 +18,13 @@ import (
 	"github.com/cbergoon/merkletree"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jeromelesaux/ethereum-training/client"
 	"github.com/jeromelesaux/ethereum-training/config"
 )
+
+var ErrorNoLoggued = errors.New("Vous n'êtes pas loggué sur cette plateforme, veuillez vous logguer avec le bouton Login.")
 
 type Controller struct {
 }
@@ -56,7 +59,10 @@ func (ctr *Controller) Anchoring(c *gin.Context) {
 		return
 	}
 
-	if err = storeFile(outfile, f.Filename, hexa256); err != nil {
+	session := sessions.Default(c)
+	email := session.Get("user-id")
+
+	if err = storeFile(outfile, f.Filename, hexa256, email.(string)); err != nil {
 		if err != nil {
 			sendJsonError(c, "Error cannot store file on local storage "+f.Filename, err)
 			return
@@ -86,9 +92,9 @@ func (ctr *Controller) Verify(c *gin.Context) {
 	// get the file from multipart form
 	f, err := c.FormFile("file")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error while getting file multipart header.")
+		fmt.Fprintf(os.Stderr, "Error while getting file multipart header.\n")
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err,
+			"error": "Error while getting file multipart header.",
 		})
 		return
 	}
@@ -264,6 +270,10 @@ func (ctr *Controller) VerifyMultiple(c *gin.Context) {
 
 func (ctr *Controller) GetFile(c *gin.Context) {
 	txhash := c.Param("txhash")
+
+	session := sessions.Default(c)
+	email := session.Get("user-id")
+
 	// get the informations from the tx
 	tx, isPending, err := client.EthClient.TransactionByHash(context.Background(), common.HexToHash(txhash))
 	if err != nil {
@@ -290,7 +300,27 @@ func (ctr *Controller) GetFile(c *gin.Context) {
 		return
 	}
 
-	fileName := files[0].Name()
+	var fileName string
+	for _, v := range files {
+		switch v.Name() {
+		case "mail.txt":
+			mailPath := filepath.Join(d, "mail.txt")
+			userID, err := getEmail(mailPath)
+			if err != nil {
+				sendJsonNotFound(c, "file from tx "+txhash+" not found.", err)
+				return
+			}
+			if userID != email {
+				sendJsonNotAuthorized(c, "This is not your file", ErrorNoLoggued)
+				return
+			}
+			break
+		default:
+			fileName = v.Name()
+		}
+
+	}
+
 	targetPath := filepath.Join(d, fileName)
 	c.Header("Content-Description", "File Transfer")
 	c.Header("Content-Transfer-Encoding", "binary")
@@ -323,7 +353,7 @@ func saveToFile(content []merkleHexa, filePath string) error {
 func sendJsonNotFound(c *gin.Context, msg string, err error) {
 	fmt.Fprintf(os.Stderr, "%s :%v\n", msg, err)
 	c.JSON(http.StatusNotFound, gin.H{
-		"error": err,
+		"error": err.Error(),
 	})
 	return
 }
@@ -331,7 +361,15 @@ func sendJsonNotFound(c *gin.Context, msg string, err error) {
 func sendJsonError(c *gin.Context, msg string, err error) {
 	fmt.Fprintf(os.Stderr, "%s :%v\n", msg, err)
 	c.JSON(http.StatusInternalServerError, gin.H{
-		"error": err,
+		"error": err.Error(),
+	})
+	return
+}
+
+func sendJsonNotAuthorized(c *gin.Context, msg string, err error) {
+	fmt.Fprintf(os.Stderr, "%s :%v\n", msg, err)
+	c.JSON(http.StatusUnauthorized, gin.H{
+		"error": err.Error(),
 	})
 	return
 }
@@ -443,7 +481,7 @@ type merkleHexa struct {
 	Hexa string
 }
 
-func storeFile(oldFile, filename, hexa256 string) error {
+func storeFile(oldFile, filename, hexa256, email string) error {
 	path := filepath.Join(config.MyConfig.GetFilepaths(), hexa256)
 	if err := os.MkdirAll(path, os.ModePerm); err != nil {
 		fmt.Fprintf(os.Stderr, "Cannot create directory [%s] with error :%v\n", path, err)
@@ -454,5 +492,26 @@ func storeFile(oldFile, filename, hexa256 string) error {
 		fmt.Fprintf(os.Stderr, "Cannot move file [%s] to [%s] with error :%v\n", oldFile, newFile, err)
 		return err
 	}
+	mailFile := filepath.Join(path, "mail.txt")
+	fw, err := os.Create(mailFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Cannot create file [%s] with error :%v\n", mailFile, err)
+		return err
+	}
+	defer fw.Close()
+	fw.WriteString(email)
 	return nil
+}
+
+func getEmail(filePath string) (string, error) {
+	fo, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer fo.Close()
+	content, err := ioutil.ReadAll(fo)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
 }
