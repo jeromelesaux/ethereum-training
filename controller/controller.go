@@ -129,7 +129,7 @@ func (ctr *Controller) Verify(c *gin.Context) {
 		return
 	}
 
-	docs, err := persistence.GetDocumentsByName(f.Filename)
+	docs, err := persistence.GetDocumentsByChecksum(hexa256)
 	if err != nil {
 		sendJsonError(c, err.Error(), err)
 		return

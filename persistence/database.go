@@ -170,3 +170,37 @@ func GetDocumentsByName(filename string) (docs []*Document, err error) {
 	res.Close()
 	return docs, nil
 }
+
+func GetDocumentsByChecksum(checksum string) (docs []*Document, err error) {
+	docs = make([]*Document, 0)
+	if err := connect(); err != nil {
+		return docs, err
+	}
+	query := "select userid,created,document,checksum,txhash from documents where checksum = '" +
+		checksum + "';"
+
+	res, err := db.Query(query)
+	if err != nil {
+		return docs, err
+	}
+
+	for res.Next() {
+		var userid, document, checksum, txhash string
+		var created time.Time
+		err = res.Scan(&userid, &created, &document, &checksum, &txhash)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error while getting row from sql (%v)\n", err)
+		} else {
+			docs = append(docs, NewDocument(
+				userid,
+				created,
+				document,
+				checksum,
+				txhash,
+			))
+		}
+
+	}
+	res.Close()
+	return docs, nil
+}
