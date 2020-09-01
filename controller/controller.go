@@ -26,8 +26,9 @@ import (
 )
 
 var (
-	ErrorNoLoggued           = errors.New("You are not loggued, please click on login button.")
-	ErrorDocumentNotBelongTo = errors.New("This document does not belong to you.")
+	ErrorNoLoggued              = errors.New("You are not loggued, please click on login button.")
+	ErrorDocumentNotBelongTo    = errors.New("This document does not belong to you.")
+	ErrorDocumentIsNotCertified = errors.New("This document is not certified.")
 )
 
 type Controller struct {
@@ -136,12 +137,13 @@ func (ctr *Controller) Verify(c *gin.Context) {
 	}
 
 	if len(docs) == 0 {
-		sendJsonError(c, ErrorDocumentNotBelongTo.Error(), ErrorDocumentNotBelongTo)
+		sendJsonNotFound(c, ErrorDocumentIsNotCertified.Error(), ErrorDocumentIsNotCertified)
 		return
 	}
 
 	// get the informations from the tx
-	tx, isPending, err := client.EthClient.TransactionByHash(context.Background(), common.HexToHash(docs[0].TxHash))
+	txHash := common.HexToHash(docs[0].TxHash)
+	tx, isPending, err := client.EthClient.TransactionByHash(context.Background(), txHash)
 	if err != nil {
 		sendJsonNotFound(c, "Can not get the transaction informations", err) // change to 404
 		return
@@ -152,6 +154,7 @@ func (ctr *Controller) Verify(c *gin.Context) {
 		})
 		return
 	}
+
 	data := tx.Data()
 	hashInBlockChain := fmt.Sprintf("%x", data)
 
@@ -162,9 +165,27 @@ func (ctr *Controller) Verify(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "This document belongs to " + docs[0].UserID + ", and has been certified the " + docs[0].Created.String(),
-	})
+	// get the transaction date
+	receipt, err := client.EthClient.TransactionReceipt(context.Background(), txHash)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error while getting receipt for transaction : %s  (%v)\n", txHash, err)
+		c.JSON(http.StatusOK, gin.H{
+			"message": "This document belongs to " + docs[0].UserID + ", and has been certified the " + docs[0].Created.String(),
+		})
+		return
+	}
+	block, err := client.EthClient.BlockByNumber(context.Background(), receipt.BlockNumber)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error while getting block for transaction : %s  (%v)\n", txHash, err)
+		c.JSON(http.StatusOK, gin.H{
+			"message": "This document belongs to " + docs[0].UserID + ", and has been certified the " + docs[0].Created.String(),
+		})
+		return
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "This document belongs to " + docs[0].UserID + ", and has been certified the " + block.ReceivedAt.String(),
+		})
+	}
 
 	return
 }
