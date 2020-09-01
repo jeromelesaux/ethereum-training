@@ -57,7 +57,7 @@
                     var obj = JSON.parse(JSON.stringify(response))
 
                     document.getElementById('txResponse').innerHTML += "\nYour transaction hash is ";
-                    document.getElementById('txResponse').innerHTML += "<a href=\"https://ropsten.etherscan.io/tx/" + obj.tx + "\" target=\"_blank\"> obj.tx </a>";
+                    document.getElementById('txResponse').innerHTML += "<a href=\"https://ropsten.etherscan.io/tx/" + obj.tx + "\" target=\"_blank\"> " + obj.tx + " </a>";
                     // window.alert(obj.tx);
                 },
                 error: function (xhr,err) {
