@@ -12,6 +12,7 @@ import (
 	"github.com/jeromelesaux/ethereum-training/client"
 	"github.com/jeromelesaux/ethereum-training/config"
 	"github.com/jeromelesaux/ethereum-training/controller"
+	"github.com/jeromelesaux/ethereum-training/persistence"
 	"github.com/jeromelesaux/ethereum-training/token"
 )
 
@@ -39,6 +40,10 @@ func main() {
 
 	}
 	controller.LoadCredentials()
+	if err := persistence.Initialise(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error while initialise the database with error (%v)\n", err)
+		os.Exit(-1)
+	}
 
 	// authenticate on ethereum platforms
 	client.Authenticate()
@@ -52,6 +57,7 @@ func main() {
 	store.Options(sessions.Options{
 		Path:   "/",
 		MaxAge: 86400 * 7,
+		Secure: true,
 	})
 
 	// router creation
@@ -86,7 +92,7 @@ func main() {
 		authorized.Use(controller.AuthorizeRequest())
 		authorized.POST("/anchor", controller.Anchoring)
 		authorized.POST("/anchormultiple", controller.AnchorMultiple)
-		authorized.GET("/txhash/:txhash", controller.GetFile)
+		authorized.GET("/txhash", controller.GetFile)
 
 	}
 	// start server at port 8080

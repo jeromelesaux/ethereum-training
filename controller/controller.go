@@ -22,9 +22,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jeromelesaux/ethereum-training/client"
 	"github.com/jeromelesaux/ethereum-training/config"
+	"github.com/jeromelesaux/ethereum-training/persistence"
 )
 
-var ErrorNoLoggued = errors.New("Vous n'êtes pas loggué sur cette plateforme, veuillez vous logguer avec le bouton Login.")
+var (
+	ErrorNoLoggued           = errors.New("You are not loggued, please click on login button.")
+	ErrorDocumentNotBelongTo = errors.New("This document does not belong to you.")
+)
 
 type Controller struct {
 }
@@ -74,10 +78,21 @@ func (ctr *Controller) Anchoring(c *gin.Context) {
 		sendJsonError(c, "Error in ethereum transaction", err)
 		return
 	}
+	err = persistence.InsertDocument(persistence.NewDocument(
+		email.(string),
+		time.Now(),
+		f.Filename,
+		hexa256,
+		txHash,
+	))
+	if err != nil {
+		sendJsonError(c, err.Error(), err)
+		return
+	}
 	// return json ok result
 	c.JSON(http.StatusOK, gin.H{
 		"tx":      txHash,
-		"message": "filename:" + f.Filename + " has hash256 " + hexa256,
+		"message": "Document " + f.Filename + " belongs to  " + email.(string) + " and is certified",
 	})
 	return
 }
@@ -86,8 +101,6 @@ func (ctr *Controller) Anchoring(c *gin.Context) {
 // curl -v -X POST http://localhost:8080/verify   -F "file=@readme.txt" -F "txhash=8753d45d70da590b0841392ac762161ac5230fa63a5b766759e6fd0d33a65631" -H "Content-Type: multipart/form-data"
 //
 func (ctr *Controller) Verify(c *gin.Context) {
-
-	txHash := c.PostForm("txhash")
 
 	// get the file from multipart form
 	f, err := c.FormFile("file")
@@ -116,8 +129,19 @@ func (ctr *Controller) Verify(c *gin.Context) {
 		return
 	}
 
+	docs, err := persistence.GetDocumentsByName(f.Filename)
+	if err != nil {
+		sendJsonError(c, err.Error(), err)
+		return
+	}
+
+	if len(docs) == 0 {
+		sendJsonError(c, ErrorDocumentNotBelongTo.Error(), ErrorDocumentNotBelongTo)
+		return
+	}
+
 	// get the informations from the tx
-	tx, isPending, err := client.EthClient.TransactionByHash(context.Background(), common.HexToHash(txHash))
+	tx, isPending, err := client.EthClient.TransactionByHash(context.Background(), common.HexToHash(docs[0].TxHash))
 	if err != nil {
 		sendJsonNotFound(c, "Can not get the transaction informations", err) // change to 404
 		return
@@ -139,7 +163,7 @@ func (ctr *Controller) Verify(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "GREAT...OoOoOOOOoooo",
+		"message": "This document belongs to " + docs[0].UserID + ", and has been certified the " + docs[0].Created.String(),
 	})
 
 	return

@@ -60,12 +60,12 @@
                     document.getElementById('txResponse').innerHTML += "<br>You can check your transaction on <a href=\"https://ropsten.etherscan.io/tx/" + obj.tx + "\" target=\"_blank\">ropsten </a>";
                     // window.alert(obj.tx);
                 },
-                error: function (err) {
-                    raiseAlert("Error message: error server");
-                },
-                statusCode:{
-                    401: function() {
-                        raiseAlert("Error message:Please login with Google Account.");
+                error: function (xhr,err) {
+                    if (xhr.status === 401) {
+                        raiseAlert("Your are not loggued, please login with your Google Account.");
+                    } else {
+                        var obj = JSON.parse(JSON.stringify(err))
+                        raiseAlert("Error message: " +obj.error);
                     }
                 }
             });
@@ -75,11 +75,9 @@
             var form = $('#verifyOnFile');
             var formData = new FormData();
             var uploadFile = document.getElementById('customVerifyFile').files[0];
-            var txHash = document.getElementById('documenthash').value.trim();
             formData.append('file', uploadFile);
-            formData.append('txhash', txHash);
             var url = form.attr('action');
-            console.log("url:" + url + " with txhash:" + txHash);
+            console.log("url:" + url);
             document.getElementById('checkResponse').innerHTML = "";
             $.ajax({
                 type: "POST",
@@ -92,7 +90,7 @@
                     console.log(response);
                     var obj = JSON.parse(JSON.stringify(response))
 
-                    document.getElementById('checkResponse').append("\nyour document is ok.");
+                    document.getElementById('checkResponse').append(obj.message);
                     // window.alert(obj.tx);
                 },
                 error: function (err) {
@@ -153,6 +151,7 @@
 
                         <img width="200px" src="logo-innovation-lab-v2.png">
                         <h2>Welcome to bytel documents Ethereum block chain certifications.</h2>
+                        <a href="/login"><button type="button" class="btn btn-primary">Login</button></a>
                     </center>
                 </div>
 
@@ -165,7 +164,7 @@
                             <label class="custom-file-label" for="customFile">Choose file</label>
                         </div>
                         <button type="button" class="btn btn-primary" onclick="anchorOneFile()">Submit</button>
-                        <a href="/login"><button type="button" class="btn btn-primary">Login</button></a>
+                       
                         <div id="txResponse"></div>
                     </form>
                 </div>
@@ -175,8 +174,6 @@
                     <form id="verifyOnFile" action="/verify" method="POST" enctype="multipart/form-data">
                         <div class="form-group">
                             <label for="documenthash">Hash of the document</label>
-                            <input type="text" class="form-control" id="documenthash" aria-describedby="hashHelp"
-                                placeholder="Enter the certification hash of your document.">
                             <small id="hashHelp" class="form-text text-muted">Please enter the certification hash of
                                 your document.</small>
                         </div>
