@@ -21,6 +21,7 @@ var conf *oauth2.Config
 var cred Credentials
 
 func (ctr *Controller) AuthHandler(c *gin.Context) {
+	fmt.Fprintf(os.Stdout, "Enter in Auth handler.\n")
 	// Handle the exchange code to initiate a transport.
 	session := sessions.Default(c)
 	retrievedState := session.Get("state")
@@ -64,9 +65,11 @@ func (ctr *Controller) AuthHandler(c *gin.Context) {
 	//seen := false
 	model.AddUser(u)
 	c.HTML(http.StatusOK, "index.tmpl", nil)
+	return
 }
 
 func (ctr *Controller) LoginHandler(c *gin.Context) {
+	fmt.Fprintf(os.Stdout, "Enter in Login handler.\n")
 	state, err := token.RandToken(32)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{"message": "Error while generating random data."})
@@ -120,13 +123,30 @@ func getLoginURL(state string) string {
 
 // AuthorizeRequest is used to authorize a request for a certain end-point group.
 func (ctr *Controller) AuthorizeRequest() gin.HandlerFunc {
+	fmt.Fprintf(os.Stdout, "Enter in Authorize handler.\n")
 	return func(c *gin.Context) {
 		session := sessions.Default(c)
 		v := session.Get("user-id")
 		if v == nil {
-			c.HTML(http.StatusUnauthorized, "error.tmpl", gin.H{"message": "Please login."})
+			c.Redirect(http.StatusTemporaryRedirect, "/login")
 			c.Abort()
 		}
 		c.Next()
 	}
+}
+
+func (ctr *Controller) Certification(c *gin.Context) {
+	c.HTML(http.StatusOK, "certification.tmpl", nil)
+	return
+}
+
+func (ctr *Controller) Verification(c *gin.Context) {
+	c.HTML(http.StatusOK, "checker.tmpl", nil)
+	return
+}
+
+func (ctr *Controller) Safebox(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
+	c.HTML(http.StatusOK, "safebox.tmpl", nil)
+	return
 }

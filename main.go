@@ -12,6 +12,7 @@ import (
 	"github.com/jeromelesaux/ethereum-training/client"
 	"github.com/jeromelesaux/ethereum-training/config"
 	"github.com/jeromelesaux/ethereum-training/controller"
+	"github.com/jeromelesaux/ethereum-training/http/header"
 	"github.com/jeromelesaux/ethereum-training/persistence"
 	"github.com/jeromelesaux/ethereum-training/token"
 )
@@ -57,7 +58,6 @@ func main() {
 	store.Options(sessions.Options{
 		Path:   "/",
 		MaxAge: 86400 * 7,
-		Secure: true,
 	})
 
 	// router creation
@@ -66,7 +66,7 @@ func main() {
 	// google oauth controller
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
-	router.Use(sessions.Sessions("goquestsession", store))
+	router.Use(header.NocacheHeaders(), sessions.Sessions("goquestsession", store))
 
 	// controller with routes definition
 	controller := &controller.Controller{}
@@ -74,13 +74,11 @@ func main() {
 	router.LoadHTMLGlob("resources/*.tmpl") // add static html files
 	router.StaticFile("/logo-innovation-lab-v2.png", "resources/logo-innovation-lab-v2.png")
 	// add certifications api
-
 	router.POST("/verify", controller.Verify)
-
 	router.POST("/verifymultiple", controller.VerifyMultiple)
-
 	router.GET("/login", controller.LoginHandler)
 	router.GET("/auth", controller.AuthHandler)
+	router.GET("/verification", controller.Verification)
 	// add static html route
 	root := router.Group("/")
 	root.GET("/", func(c *gin.Context) {
@@ -88,13 +86,13 @@ func main() {
 	})
 
 	authorized := router.Group("/api")
-	{
-		authorized.Use(controller.AuthorizeRequest())
-		authorized.POST("/anchor", controller.Anchoring)
-		authorized.POST("/anchormultiple", controller.AnchorMultiple)
-		authorized.GET("/txhash", controller.GetFile)
+	authorized.Use(controller.AuthorizeRequest(), header.NocacheHeaders())
+	authorized.POST("/anchor", controller.Anchoring)
+	authorized.POST("/anchormultiple", controller.AnchorMultiple)
+	authorized.GET("/txhash", controller.GetFile)
+	authorized.GET("/safebox", controller.Safebox)
+	authorized.GET("/certification", controller.Certification)
 
-	}
 	// start server at port 8080
 	if err := router.Run(":8080"); err != nil {
 		fmt.Fprintf(os.Stderr, "Can not start server error :%v\n", err)

@@ -136,27 +136,51 @@
     </script>
     <div id="alerts" class="alert alert-danger" role="alert" style="display:none;"></div>
     <div class="container">
-
         <div id="content">
-
             <nav class="nav nav-tabs">
-                <a class="nav-item nav-link active" href="#home" data-toggle="tab">Home</a>
+                <a href="#certificate" class="nav-item nav-link active" data-toggle="tab">certify one document</a>                
             </nav>
-            <center>
-                        <img width="100px" src="https://blog.webnet.fr/wp-content/uploads/2019/02/ethereum-logo.png">
 
-                        <img width="200px" src="logo-innovation-lab-v2.png">
-                        <h2>Welcome to bytel documents Ethereum block chain certifications.</h2>
-                        <br><br>
-                        To access differents services : 
-                        <ul class="list-group">
-                        <li class="list-group-item"><a href="/verification">Verify your document</a></li>
-                        <li class="list-group-item"><a href="/api/certification">Certify your document</a></li>
-                        <li class="list-group-item"><a href="/api/safebox">Access to the safebox</a></li>
-                        </ul>
-            </center>
-       
+            <div id="my-tab-content" class="tab-content">
+              
+
+                <div class="tab-pane active" id="certificate">
+                    Certify your document.<br><br><br>
+                    <form id="anchoringFile" action="/api/anchor" method="POST" enctype="multipart/form-data">
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" id="customFile">
+                            <label class="custom-file-label" for="customFile">Choose file</label>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="anchorOneFile()">Submit</button>
+                       
+                        <div id="txResponse"></div>
+                    </form>
+                </div>
+
+                <div class="tab-pane" id="verify">
+                    Check your document..<br><br><br>
+                    <form id="verifyOnFile" action="/verify" method="POST" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="documenthash">Hash of the document</label>
+                            <small id="hashHelp" class="form-text text-muted">Please enter the certification hash of
+                                your document.</small>
+                        </div>
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" id="customVerifyFile">
+                            <label class="custom-file-label" for="customFile">Choose file</label>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="verifyOneFile()">Submit</button>
+                        <div id="checkResponse">
+
+                        </div>
+                    </form>
+
+                </div>
+            </div>
         </div>
+    </div>
+
+
     </div>
 </body>
 

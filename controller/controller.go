@@ -182,8 +182,10 @@ func (ctr *Controller) Verify(c *gin.Context) {
 		})
 		return
 	} else {
+
+		transactionTime := time.Unix(int64(block.Time()), 0)
 		c.JSON(http.StatusOK, gin.H{
-			"message": "This document belongs to " + docs[0].UserID + ", and has been certified the " + block.ReceivedAt.String(),
+			"message": "This document belongs to " + docs[0].UserID + ", and has been certified the " + transactionTime.String(),
 		})
 	}
 
