@@ -10,6 +10,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/uploader.css">
 </head>
 
 <body>
@@ -19,9 +20,6 @@
             $(this).next('.custom-file-label').html(event.target.files[0].name);
         })
 
-        $('.alert .close').live("click", function (e) {
-            $(this).parent().hide();
-        });
 
         
         function raiseAlert(message) {
@@ -36,103 +34,7 @@
             $("#alerts").hide();
         }
 
-
-        function anchorOneFile() {
-            var form = $('#anchoringFile');
-            var formData = new FormData();
-            formData.append('file', document.getElementById('customFile').files[0]);
-            var url = form.attr('action');
-            console.log("url:" + url);
-            document.getElementById('txResponse').innerHTML = "";
-          
-            $.ajax({
-                type: "POST",
-                url: url,
-                contentType: false,
-                processData: false,
-                cache: false,
-                data: formData,
-                success: function (response) {
-                    console.log(response);
-                    var obj = JSON.parse(JSON.stringify(response))
-
-                    document.getElementById('txResponse').innerHTML += "\nYour transaction hash is ";
-                    document.getElementById('txResponse').innerHTML += "<a href=\"https://ropsten.etherscan.io/tx/" + obj.tx + "\" target=\"_blank\"> " + obj.tx + " </a>";
-                    // window.alert(obj.tx);
-                },
-                error: function (xhr,err) {
-                    if (xhr.status === 401) {
-                        raiseAlert("Your are not loggued, please login with your Google Account.");
-                    } else {
-                        var obj = JSON.parse(JSON.stringify(err))
-                        raiseAlert("Error message: " +obj.error);
-                    }
-                }
-            });
-        }
-
-        function verifyOneFile() {
-            var form = $('#verifyOnFile');
-            var formData = new FormData();
-            var uploadFile = document.getElementById('customVerifyFile').files[0];
-            formData.append('file', uploadFile);
-            var url = form.attr('action');
-            console.log("url:" + url);
-            document.getElementById('checkResponse').innerHTML = "";
-            $.ajax({
-                type: "POST",
-                url: url,
-                contentType: false,
-                processData: false,
-                cache: false,
-                data: formData,
-                success: function (response) {
-                    console.log(response);
-                    var obj = JSON.parse(JSON.stringify(response))
-
-                    document.getElementById('checkResponse').append(obj.message);
-                    // window.alert(obj.tx);
-                },
-                error: function (err) {
-                    if (err.status == 406) {
-                        raiseAlert("Your transaction is still being proceed, please retry later.");
-                    } else {
-                        var obj = JSON.parse(JSON.stringify(err.responseJSON));
-                        console.log(obj);
-                        raiseAlert("Error your document \"" + uploadFile.name + "\" and your hash don't correspond, <br>  message: " + obj.error);
-                    }
-                }
-            });
-        }
-
-        function getfile() {
-            var txhash = document.getElementById('getfilehash').value.trim();
-            var url = "/api/txhash/" + txhash;
-            console.log(url);
-
-            $.ajax({
-                type: "GET",
-                url: url,
-                success: function (response) {
-                    window.location = url;
-                },
-                error: function (err) {
-                    var obj = JSON.parse(JSON.stringify(err));
-                    console.log(obj);
-                    if (obj.responseJSON) {
-                        raiseAlert("Error <br>  message: " + obj.responseJSON.error);
-                    } else {
-                        raiseAlert("Error your document is not found, <br>");
-                    }
-
-                },
-                statusCode:{
-                    401: function() {
-                        raiseAlert("Error message:Please login with Google Account.");
-                    }
-                }
-            });
-        }
+       
     </script>
     <div id="alerts" class="alert alert-danger" role="alert" style="display:none;"></div>
     <div class="container">
@@ -140,28 +42,144 @@
 
            
                
-                    Check your document..<br><br><br>
-                    <form id="verifyOnFile" action="/verify" method="POST" enctype="multipart/form-data">
-                        <div class="form-group">
-                            <label for="documenthash">Hash of the document</label>
-                            <small id="hashHelp" class="form-text text-muted">Please enter the certification hash of
-                                your document.</small>
-                        </div>
-                        <div class="custom-file">
-                            <input type="file" class="custom-file-input" id="customVerifyFile">
-                            <label class="custom-file-label" for="customFile">Choose file</label>
-                        </div>
-                        <button type="button" class="btn btn-primary" onclick="verifyOneFile()">Submit</button>
-                        <div id="checkResponse">
-
-                        </div>
+                    Check your document..<br>
+                    <button type="button" class="btn btn-primary" onclick="cleanGallery()">Clear</button>
+                    <a type="button" class="btn btn-primary" href="/">Return Home</a>
+                    <br>
+                    Drag and drop the file you want to check in this area bellow.
+                    <div id="drop-area">
+                    <form id="verifyOnFile" class="my-form" action="/verify" method="POST" enctype="multipart/form-data">
+                    <input type="file" id="fileElem" multiple accept="*/*" onchange="handleFiles(this.files)">
+                    <label class="button" class="btn btn-primary" for="fileElem">Check file's certification.</label>
                     </form>
-
+                      <progress id="progress-bar" max=100 value=0></progress>
+                      <div id="gallery" /></div>
+                    </div>
+                    <div id="checkResponse">
+                    </div>
         </div>
     </div>
 
 
     </div>
+     <script lang="javascript">
+
+
+
+    // ************************ Drag and drop ***************** //
+let dropArea = document.getElementById("drop-area")
+
+// Prevent default drag behaviors
+;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+  dropArea.addEventListener(eventName, preventDefaults, false)   
+  document.body.addEventListener(eventName, preventDefaults, false)
+})
+
+// Highlight drop area when item is dragged over it
+;['dragenter', 'dragover'].forEach(eventName => {
+  dropArea.addEventListener(eventName, highlight, false)
+})
+
+;['dragleave', 'drop'].forEach(eventName => {
+  dropArea.addEventListener(eventName, unhighlight, false)
+})
+
+// Handle dropped files
+dropArea.addEventListener('drop', handleDrop, false)
+
+function preventDefaults (e) {
+  e.preventDefault()
+  e.stopPropagation()
+}
+
+function highlight(e) {
+  dropArea.classList.add('highlight')
+}
+
+function unhighlight(e) {
+  dropArea.classList.remove('active')
+}
+
+function handleDrop(e) {
+  var dt = e.dataTransfer
+  var files = dt.files
+
+  handleFiles(files)
+}
+
+let uploadProgress = []
+let progressBar = document.getElementById('progress-bar')
+
+function initializeProgress(numFiles) {
+  progressBar.value = 0
+  uploadProgress = []
+
+  for(let i = numFiles; i > 0; i--) {
+    uploadProgress.push(0)
+  }
+}
+
+function updateProgress(fileNumber, percent) {
+  uploadProgress[fileNumber] = percent
+  let total = uploadProgress.reduce((tot, curr) => tot + curr, 0) / uploadProgress.length
+  console.debug('update', fileNumber, percent, total)
+  progressBar.value = total
+}
+
+function handleFiles(files) {
+  files = [...files]
+  initializeProgress(files.length)
+  files.forEach(uploadFile)
+  files.forEach(previewFile)
+}
+
+function previewFile(file) {
+  let reader = new FileReader()
+  reader.readAsDataURL(file)
+  reader.onloadend = function() {
+    let img = document.createElement('img')
+    img.src = reader.result
+    document.getElementById('gallery').appendChild(img)
+  }
+}
+
+function cleanGallery(){
+    document.getElementById('gallery').innerHTML = ""
+    document.getElementById('checkResponse').innerHTML = ""
+    progressBar.value = 0
+}
+
+function uploadFile(file, i) {
+  var url = '/verify'
+  var xhr = new XMLHttpRequest()
+  xhr.responseType = 'json'
+  var formData = new FormData()
+  xhr.open('POST', url, true)
+  xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest')
+
+  // Update progress (can be used to show progress indicator)
+  xhr.upload.addEventListener("progress", function(e) {
+    updateProgress(i, (e.loaded * 100.0 / e.total) || 100)
+  })
+
+  xhr.addEventListener('readystatechange', function(e) {
+    if (xhr.readyState == 4 && xhr.status == 200) {
+      updateProgress(i, 100) // <- Add this
+      document.getElementById('checkResponse').innerHTML = xhr.response.message
+    }
+    else if (xhr.readyState == 4 && xhr.status != 200) {
+      // Error. Inform the user
+      raiseAlert(xhr.response.error)
+    } else {
+    raiseAlert(xhr.response.error)
+    }
+  })
+
+  formData.append('upload_preset', 'ujpu6gyk')
+  formData.append('file', file)
+  xhr.send(formData)
+}
+</script>
 </body>
 
 </html>

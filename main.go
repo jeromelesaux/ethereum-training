@@ -73,6 +73,7 @@ func main() {
 	//router.LoadHTMLGlob("resources/*.html") // add static html files
 	router.LoadHTMLGlob("resources/*.tmpl") // add static html files
 	router.StaticFile("/logo-innovation-lab-v2.png", "resources/logo-innovation-lab-v2.png")
+	router.StaticFile("/uploader.css", "resources/uploader.css")
 	// add certifications api
 	router.POST("/verify", controller.Verify)
 	router.POST("/verifymultiple", controller.VerifyMultiple)
