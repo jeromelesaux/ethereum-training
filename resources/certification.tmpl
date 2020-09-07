@@ -10,6 +10,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/uploader.css">
 </head>
 
 <body>
@@ -145,35 +146,20 @@
               
 
                 <div class="tab-pane active" id="certificate">
-                    Certify your document.<br><br><br>
-                    <form id="anchoringFile" action="/api/anchor" method="POST" enctype="multipart/form-data">
-                        <div class="custom-file">
-                            <input type="file" class="custom-file-input" id="customFile">
-                            <label class="custom-file-label" for="customFile">Choose file</label>
-                        </div>
-                        <button type="button" class="btn btn-primary" onclick="anchorOneFile()">Submit</button>
-                       
-                        <div id="txResponse"></div>
+                    Certify your document..<br>
+                    <button type="button" class="btn btn-primary" onclick="cleanGallery()">Clear</button>
+                    <a type="button" class="btn btn-primary" href="/">Return Home</a>
+                    <br>
+                    Drag and drop the file you want to check in this area bellow.
+                    <div id="drop-area">
+                    <form id="verifyOnFile" class="my-form" action="/api/anchor" method="POST" enctype="multipart/form-data">
+                    <input type="file" id="fileElem" multiple accept="*/*" onchange="handleFiles(this.files)">
+                    <label class="button" class="btn btn-primary" for="fileElem">Check file's certification.</label>
                     </form>
-                </div>
-
-                <div class="tab-pane" id="verify">
-                    Check your document..<br><br><br>
-                    <form id="verifyOnFile" action="/verify" method="POST" enctype="multipart/form-data">
-                        <div class="form-group">
-                            <label for="documenthash">Hash of the document</label>
-                            <small id="hashHelp" class="form-text text-muted">Please enter the certification hash of
-                                your document.</small>
-                        </div>
-                        <div class="custom-file">
-                            <input type="file" class="custom-file-input" id="customVerifyFile">
-                            <label class="custom-file-label" for="customFile">Choose file</label>
-                        </div>
-                        <button type="button" class="btn btn-primary" onclick="verifyOneFile()">Submit</button>
-                        <div id="checkResponse">
-
-                        </div>
-                    </form>
+                      <progress id="progress-bar" max=100 value=0></progress>
+                      <div id="gallery" /></div>
+                    </div>
+                    <div id="checkResponse">
 
                 </div>
             </div>
@@ -182,6 +168,127 @@
 
 
     </div>
+
+      <script lang="javascript">
+
+
+
+    // ************************ Drag and drop ***************** //
+let dropArea = document.getElementById("drop-area")
+
+// Prevent default drag behaviors
+;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+  dropArea.addEventListener(eventName, preventDefaults, false)   
+  document.body.addEventListener(eventName, preventDefaults, false)
+})
+
+// Highlight drop area when item is dragged over it
+;['dragenter', 'dragover'].forEach(eventName => {
+  dropArea.addEventListener(eventName, highlight, false)
+})
+
+;['dragleave', 'drop'].forEach(eventName => {
+  dropArea.addEventListener(eventName, unhighlight, false)
+})
+
+// Handle dropped files
+dropArea.addEventListener('drop', handleDrop, false)
+
+function preventDefaults (e) {
+  e.preventDefault()
+  e.stopPropagation()
+}
+
+function highlight(e) {
+  dropArea.classList.add('highlight')
+}
+
+function unhighlight(e) {
+  dropArea.classList.remove('active')
+}
+
+function handleDrop(e) {
+  var dt = e.dataTransfer
+  var files = dt.files
+
+  handleFiles(files)
+}
+
+let uploadProgress = []
+let progressBar = document.getElementById('progress-bar')
+
+function initializeProgress(numFiles) {
+  progressBar.value = 0
+  uploadProgress = []
+
+  for(let i = numFiles; i > 0; i--) {
+    uploadProgress.push(0)
+  }
+}
+
+function updateProgress(fileNumber, percent) {
+  uploadProgress[fileNumber] = percent
+  let total = uploadProgress.reduce((tot, curr) => tot + curr, 0) / uploadProgress.length
+  console.debug('update', fileNumber, percent, total)
+  progressBar.value = total
+}
+
+function handleFiles(files) {
+  files = [...files]
+  initializeProgress(files.length)
+  files.forEach(uploadFile)
+  files.forEach(previewFile)
+}
+
+function previewFile(file) {
+  let reader = new FileReader()
+  reader.readAsDataURL(file)
+  reader.onloadend = function() {
+    let img = document.createElement('img')
+    img.src = reader.result
+    document.getElementById('gallery').appendChild(img)
+  }
+}
+
+function cleanGallery(){
+    document.getElementById('gallery').innerHTML = ""
+    document.getElementById('checkResponse').innerHTML = ""
+    progressBar.value = 0
+}
+
+function uploadFile(file, i) {
+  var url = '/api/anchor'
+  var xhr = new XMLHttpRequest()
+  xhr.responseType = 'json'
+  var formData = new FormData()
+  xhr.open('POST', url, true)
+  xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest')
+
+  // Update progress (can be used to show progress indicator)
+  xhr.upload.addEventListener("progress", function(e) {
+    updateProgress(i, (e.loaded * 100.0 / e.total) || 100)
+  })
+
+  xhr.addEventListener('readystatechange', function(e) {
+    if (xhr.readyState == 4 && xhr.status == 200) {
+      updateProgress(i, 100) // <- Add this
+      document.getElementById('checkResponse').innerHTML += "\nYour transaction hash is ";
+      document.getElementById('checkResponse').innerHTML += "<a href=\"https://ropsten.etherscan.io/tx/" + xhr.response.tx + "\" target=\"_blank\"> " + xhr.response.tx + " </a>";
+      
+    }
+    else if (xhr.readyState == 4 && xhr.status != 200) {
+      // Error. Inform the user
+      raiseAlert(xhr.response.error)
+    } else {
+    raiseAlert(xhr.response.error)
+    }
+  })
+
+  formData.append('upload_preset', 'ujpu6gyk')
+  formData.append('file', file)
+  xhr.send(formData)
+}
+</script>
 </body>
 
 </html>
