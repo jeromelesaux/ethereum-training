@@ -88,6 +88,18 @@ func (ctr *Controller) LoginHandler(c *gin.Context) {
 	c.HTML(http.StatusOK, "auth.tmpl", gin.H{"link": link})
 }
 
+func (ctr *Controller) LogoutHandler(c *gin.Context) {
+	session := sessions.Default(c)
+	session.Clear()
+	session.Options(sessions.Options{MaxAge: -1})
+	err := session.Save() // destroy session for user
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{"message": "Error while saving session."})
+		return
+	}
+	c.HTML(http.StatusOK, "index.tmpl", nil)
+}
+
 // Credentials which stores google ids.
 type Credentials struct {
 	Cid     string `json:"cid"`

@@ -139,7 +139,7 @@
     <div class="container">
         <div id="content">
             <nav class="nav nav-tabs">
-                <a href="#certificate" class="nav-item nav-link active" data-toggle="tab">certify one document</a>                
+                <a href="#certificate" class="nav-item nav-link active" data-toggle="tab"></a>                
             </nav>
 
             <div id="my-tab-content" class="tab-content">
@@ -149,12 +149,16 @@
                     Certify your document..<br>
                     <button type="button" class="btn btn-primary" onclick="cleanGallery()">Clear</button>
                     <a type="button" class="btn btn-primary" href="/">Return Home</a>
+                    <a type="button" class="btn btn-primary" href="/logout">Logout</a>
                     <br>
                     Drag and drop the file you want to check in this area bellow.
                     <div id="drop-area">
                     <form id="verifyOnFile" class="my-form" action="/api/anchor" method="POST" enctype="multipart/form-data">
+                    <center>
+                    <img src="/upload.png" width="100px"><br>
                     <input type="file" id="fileElem" multiple accept="*/*" onchange="handleFiles(this.files)">
-                    <label class="button" class="btn btn-primary" for="fileElem">Check file's certification.</label>
+                    <label class="button" class="btn btn-primary" for="fileElem">Certify your document.</label>
+                    </center>
                     </form>
                       <progress id="progress-bar" max=100 value=0></progress>
                       <div id="gallery" /></div>
@@ -219,6 +223,7 @@ let progressBar = document.getElementById('progress-bar')
 
 function initializeProgress(numFiles) {
   progressBar.value = 0
+  progressBar.style.visibility = "visible"
   uploadProgress = []
 
   for(let i = numFiles; i > 0; i--) {
@@ -254,6 +259,8 @@ function cleanGallery(){
     document.getElementById('gallery').innerHTML = ""
     document.getElementById('checkResponse').innerHTML = ""
     progressBar.value = 0
+    progressBar.style.visibility = "hidden"
+    
 }
 
 function uploadFile(file, i) {
