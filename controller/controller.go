@@ -23,6 +23,7 @@ import (
 	"github.com/jeromelesaux/ethereum-training/client"
 	"github.com/jeromelesaux/ethereum-training/config"
 	"github.com/jeromelesaux/ethereum-training/persistence"
+	"github.com/jeromelesaux/ethereum-training/storage"
 )
 
 var (
@@ -66,15 +67,18 @@ func (ctr *Controller) Anchoring(c *gin.Context) {
 
 	session := sessions.Default(c)
 	email := session.Get("user-id")
+	useLocalStorage := config.MyConfig.UseLocalStorage
+	s3Region := config.MyConfig.AwsS3Region
+	s3Bucket := config.MyConfig.AwsS3Bucket
 
-	if err = storeFile(outfile, f.Filename, hexa256, email.(string)); err != nil {
+	if err = storage.StoreFile(outfile, f.Filename, hexa256, email.(string), s3Region, s3Bucket, useLocalStorage); err != nil {
 		if err != nil {
 			sendJsonError(c, "Error cannot store file on local storage "+f.Filename, err)
 			return
 		}
 	}
 
-	txHash, err := sendTransaction(sum256)
+	txHash, err := sendTransaction(sum256, []byte(email.(string)))
 	if err != nil {
 		sendJsonError(c, "Error in ethereum transaction", err)
 		return
@@ -155,7 +159,7 @@ func (ctr *Controller) Verify(c *gin.Context) {
 		return
 	}
 
-	data := tx.Data()
+	txEmail, data := parseData(tx.Data())
 	hashInBlockChain := fmt.Sprintf("%x", data)
 
 	if hexa256 != hashInBlockChain {
@@ -182,10 +186,15 @@ func (ctr *Controller) Verify(c *gin.Context) {
 		})
 		return
 	} else {
-
+		var who string
+		if len(txEmail) > 0 {
+			who = string(txEmail)
+		} else {
+			who = docs[0].UserID
+		}
 		transactionTime := time.Unix(int64(block.Time()), 0)
 		c.JSON(http.StatusOK, gin.H{
-			"message": "This document belongs to " + docs[0].UserID + ", and has been certified the " + transactionTime.String(),
+			"message": "This document belongs to " + who + ", and has been certified the " + transactionTime.String(),
 		})
 	}
 
@@ -226,7 +235,7 @@ func (ctr *Controller) AnchorMultiple(c *gin.Context) {
 	}
 	merkleRoot := t.MerkleRoot()
 	//hexaMerkleRoot := fmt.Sprintf("%x", merkleRoot)
-	txHash, err := sendTransaction(merkleRoot)
+	txHash, err := sendTransaction(merkleRoot, []byte{})
 	if err != nil {
 		sendJsonError(c, "Error in transaction", err)
 		return
@@ -293,7 +302,7 @@ func (ctr *Controller) VerifyMultiple(c *gin.Context) {
 		})
 		return
 	}
-	data := tx.Data()
+	_, data := parseData(tx.Data())
 	hashInBlockChain := fmt.Sprintf("%x", data)
 
 	// check the hash in data of the transaction
@@ -421,7 +430,12 @@ func sendJsonNotAuthorized(c *gin.Context, msg string, err error) {
 	return
 }
 
-func sendTransaction(data []byte) (string, error) {
+func sendTransaction(data, user []byte) (string, error) {
+
+	txData := make([]byte, len(data)+len(user)) // tansaction data contains concat data + user's email
+	copy(txData, data)
+	copy(txData[len(data):], user)
+
 	client.SafeNonceTx.NonceMutex.Lock() // lock nonce for operation
 
 	nonce := client.SafeNonceTx.Nonce                                       // current nonce
@@ -440,7 +454,7 @@ func sendTransaction(data []byte) (string, error) {
 		value,
 		gasLimit,
 		gasPrice,
-		data,
+		txData,
 	)
 
 	// find the id of the chain to use (instance test chainid)
@@ -528,28 +542,6 @@ type merkleHexa struct {
 	Hexa string
 }
 
-func storeFile(oldFile, filename, hexa256, email string) error {
-	path := filepath.Join(config.MyConfig.GetFilepaths(), hexa256)
-	if err := os.MkdirAll(path, os.ModePerm); err != nil {
-		fmt.Fprintf(os.Stderr, "Cannot create directory [%s] with error :%v\n", path, err)
-		return err
-	}
-	newFile := filepath.Join(path, filename)
-	if err := os.Rename(oldFile, newFile); err != nil {
-		fmt.Fprintf(os.Stderr, "Cannot move file [%s] to [%s] with error :%v\n", oldFile, newFile, err)
-		return err
-	}
-	mailFile := filepath.Join(path, "mail.txt")
-	fw, err := os.Create(mailFile)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Cannot create file [%s] with error :%v\n", mailFile, err)
-		return err
-	}
-	defer fw.Close()
-	fw.WriteString(email)
-	return nil
-}
-
 func getEmail(filePath string) (string, error) {
 	fo, err := os.Open(filePath)
 	if err != nil {
@@ -561,4 +553,12 @@ func getEmail(filePath string) (string, error) {
 		return "", err
 	}
 	return string(content), nil
+}
+
+func parseData(data []byte) (email, hexa256 []byte) {
+	hexa256 = make([]byte, 32)
+	email = make([]byte, len(data)-32)
+	copy(hexa256, data[0:32])
+	copy(email, data[32:])
+	return
 }

@@ -173,7 +173,8 @@ function uploadFile(file, i) {
       // Error. Inform the user
       raiseAlert(xhr.response.error)
     } else {
-    raiseAlert(xhr.response.error)
+    console.log(xhr)
+      raiseAlert(xhr.response.message)
     }
   })
 

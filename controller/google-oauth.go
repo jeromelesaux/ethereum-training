@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -20,13 +21,24 @@ import (
 var conf *oauth2.Config
 var cred Credentials
 
+type OauthState struct {
+	State     string `json:"state"`
+	OriginURL string `json:"originurl"`
+}
+
 func (ctr *Controller) AuthHandler(c *gin.Context) {
 	fmt.Fprintf(os.Stdout, "Enter in Auth handler.\n")
 	// Handle the exchange code to initiate a transport.
 	session := sessions.Default(c)
 	retrievedState := session.Get("state")
 	queryState := c.Request.URL.Query().Get("state")
-	if retrievedState != queryState {
+	reader := bytes.NewReader([]byte(queryState))
+	ostate := &OauthState{}
+	if err := json.NewDecoder(reader).Decode(ostate); err != nil {
+		c.HTML(http.StatusUnauthorized, "error.tmpl", gin.H{"message": err.Error()})
+		return
+	}
+	if retrievedState != ostate.State {
 		log.Printf("Invalid session state: retrieved: %s; Param: %s", retrievedState, queryState)
 		c.HTML(http.StatusUnauthorized, "error.tmpl", gin.H{"message": "Invalid session state."})
 		return
@@ -64,12 +76,14 @@ func (ctr *Controller) AuthHandler(c *gin.Context) {
 
 	//seen := false
 	model.AddUser(u)
-	c.HTML(http.StatusOK, "index.tmpl", nil)
+	c.Redirect(http.StatusTemporaryRedirect, ostate.OriginURL)
 	return
 }
 
 func (ctr *Controller) LoginHandler(c *gin.Context) {
 	fmt.Fprintf(os.Stdout, "Enter in Login handler.\n")
+
+	from := c.Request.Header.Get("Referer")
 	state, err := token.RandToken(32)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{"message": "Error while generating random data."})
@@ -83,7 +97,14 @@ func (ctr *Controller) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	link := getLoginURL(state)
+	ostate := OauthState{State: state, OriginURL: from}
+	var buffer bytes.Buffer
+	if err := json.NewEncoder(&buffer).Encode(&ostate); err != nil {
+		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{"message": err.Error()})
+		return
+	}
+
+	link := getLoginURL(buffer.String())
 	fmt.Printf("redirect link is : (%s) and state : (%s)\n", link, state)
 	c.HTML(http.StatusOK, "auth.tmpl", gin.H{"link": link})
 }
@@ -116,7 +137,7 @@ func LoadCredentials() {
 		log.Println("unable to marshal data")
 		return
 	}
-	serverURL := config.MyConfig.ServerUrl
+	serverURL := config.MyConfig.ServerURL
 
 	conf = &oauth2.Config{
 		ClientID:     cred.Cid,
@@ -140,9 +161,12 @@ func (ctr *Controller) AuthorizeRequest() gin.HandlerFunc {
 		session := sessions.Default(c)
 		v := session.Get("user-id")
 		if v == nil {
+			//	referer := c.Request.URL.Scheme + c.Request.Host + c.Request.RequestURI
+			//	c.Request.Header.Set("Referer", referer)
 			c.Redirect(http.StatusTemporaryRedirect, "/login")
 			c.Abort()
 		}
+
 		c.Next()
 	}
 }
