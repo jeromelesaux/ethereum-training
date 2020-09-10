@@ -344,18 +344,19 @@ func (ctr *Controller) GetFile(c *gin.Context) {
 
 	txEmail, data := parseData(tx.Data())
 	hashInBlockChain := fmt.Sprintf("%x", data)
-	d := filepath.Join(config.MyConfig.GetFilepaths(), hashInBlockChain)
-	fileName, err := storage.GetFile(d, config.MyConfig.AwsS3Region, config.MyConfig.AwsS3Bucket, config.MyConfig.UseLocalStorage)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"message": err.Error(),
-		})
-		return
-	}
 
 	docs, err := persistence.GetDocumentsByChecksum(hashInBlockChain)
 	if err != nil {
 		sendJsonError(c, err.Error(), err)
+		return
+	}
+	file := docs[0].DocumentName
+	d := filepath.Join(config.MyConfig.GetFilepaths(), hashInBlockChain)
+	fileName, err := storage.GetFile(d, file, config.MyConfig.AwsS3Region, config.MyConfig.AwsS3Bucket, config.MyConfig.UseLocalStorage)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"message": err.Error(),
+		})
 		return
 	}
 

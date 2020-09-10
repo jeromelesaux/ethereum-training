@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"path/filepath"
+
 	"github.com/jeromelesaux/ethereum-training/storage/amazon"
 	"github.com/jeromelesaux/ethereum-training/storage/local"
 )
@@ -12,9 +14,10 @@ func StoreFile(oldFile, filename, hexa256, email, region, bucket string, storeLo
 	return amazon.Upload(oldFile, region, bucket)
 }
 
-func GetFile(directoryPath, region, bucket string, storeLocally bool) (filePath string, err error) {
+func GetFile(directoryPath, filename, region, bucket string, storeLocally bool) (filePath string, err error) {
 	if storeLocally {
 		return local.GetLocalFile(directoryPath)
 	}
-	return amazon.Download(directoryPath, region, bucket)
+	dir := filepath.Join(directoryPath, filename)
+	return amazon.Download(dir, region, bucket)
 }
