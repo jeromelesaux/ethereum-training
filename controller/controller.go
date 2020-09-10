@@ -351,8 +351,12 @@ func (ctr *Controller) GetFile(c *gin.Context) {
 		return
 	}
 	file := docs[0].DocumentName
-	d := filepath.Join(config.MyConfig.GetFilepaths(), hashInBlockChain)
-	fileName, err := storage.GetFile(d, file, config.MyConfig.AwsS3Region, config.MyConfig.AwsS3Bucket, config.MyConfig.UseLocalStorage)
+	filePath, err := storage.GetFile(
+		file,
+		hashInBlockChain,
+		config.MyConfig.AwsS3Region,
+		config.MyConfig.AwsS3Bucket,
+		config.MyConfig.UseLocalStorage)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"message": err.Error(),
@@ -370,12 +374,11 @@ func (ctr *Controller) GetFile(c *gin.Context) {
 		sendJsonError(c, ErrorDocumentNotBelongTo.Error(), ErrorDocumentNotBelongTo)
 		return
 	}
-	targetPath := filepath.Join(d, fileName)
 	c.Header("Content-Description", "File Transfer")
 	c.Header("Content-Transfer-Encoding", "binary")
-	c.Header("Content-Disposition", "attachment; filename="+fileName)
+	c.Header("Content-Disposition", "attachment; filename="+file)
 	c.Header("Content-Type", "application/octet-stream")
-	c.File(targetPath)
+	c.File(filePath)
 }
 
 func readFromFile(filePath string) (content []merkleHexa, err error) {
