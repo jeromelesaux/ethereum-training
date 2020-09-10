@@ -1,7 +1,9 @@
 package local
 
 import (
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -28,4 +30,40 @@ func StoreLocalFile(oldFile, filename, hexa256, email string) error {
 	defer fw.Close()
 	fw.WriteString(email)
 	return nil
+}
+
+func GetLocalFile(directoryPath string) (fileName string, err error) {
+
+	files, err := ioutil.ReadDir(directoryPath)
+	if err != nil {
+		return "", err
+	}
+
+	if len(files) == 0 {
+		err = errors.New("no file found")
+		return "", err
+	}
+
+	for _, v := range files {
+		switch v.Name() {
+		case "mail.txt":
+			break
+		default:
+			fileName = v.Name()
+		}
+	}
+	return fileName, nil
+}
+
+func getEmail(filePath string) (string, error) {
+	fo, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer fo.Close()
+	content, err := ioutil.ReadAll(fo)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
 }

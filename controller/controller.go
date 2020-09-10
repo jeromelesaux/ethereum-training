@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"math/big"
 	"net/http"
@@ -342,41 +341,34 @@ func (ctr *Controller) GetFile(c *gin.Context) {
 		})
 		return
 	}
-	data := tx.Data()
+
+	txEmail, data := parseData(tx.Data())
 	hashInBlockChain := fmt.Sprintf("%x", data)
 	d := filepath.Join(config.MyConfig.GetFilepaths(), hashInBlockChain)
-	files, err := ioutil.ReadDir(d)
+	fileName, err := storage.GetFile(d, config.MyConfig.AwsS3Region, config.MyConfig.AwsS3Bucket, config.MyConfig.UseLocalStorage)
 	if err != nil {
-		sendJsonNotFound(c, "file from tx "+txhash+" not found.", err)
+		c.JSON(http.StatusNotFound, gin.H{
+			"message": err.Error(),
+		})
 		return
 	}
 
-	if len(files) == 0 {
-		sendJsonNotFound(c, "file from tx "+txhash+" not found.", err)
+	docs, err := persistence.GetDocumentsByChecksum(hashInBlockChain)
+	if err != nil {
+		sendJsonError(c, err.Error(), err)
 		return
 	}
 
-	var fileName string
-	for _, v := range files {
-		switch v.Name() {
-		case "mail.txt":
-			mailPath := filepath.Join(d, "mail.txt")
-			userID, err := getEmail(mailPath)
-			if err != nil {
-				sendJsonNotFound(c, "file from tx "+txhash+" not found.", err)
-				return
-			}
-			if userID != email {
-				sendJsonNotAuthorized(c, "This is not your file", ErrorNoLoggued)
-				return
-			}
-			break
-		default:
-			fileName = v.Name()
-		}
-
+	var who string
+	if len(txEmail) > 0 {
+		who = string(txEmail)
+	} else {
+		who = docs[0].UserID
 	}
-
+	if who != email.(string) {
+		sendJsonError(c, ErrorDocumentNotBelongTo.Error(), ErrorDocumentNotBelongTo)
+		return
+	}
 	targetPath := filepath.Join(d, fileName)
 	c.Header("Content-Description", "File Transfer")
 	c.Header("Content-Transfer-Encoding", "binary")
@@ -540,19 +532,6 @@ func (m *MerkleContent) CalculateHash() ([]byte, error) {
 
 type merkleHexa struct {
 	Hexa string
-}
-
-func getEmail(filePath string) (string, error) {
-	fo, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer fo.Close()
-	content, err := ioutil.ReadAll(fo)
-	if err != nil {
-		return "", err
-	}
-	return string(content), nil
 }
 
 func parseData(data []byte) (email, hexa256 []byte) {

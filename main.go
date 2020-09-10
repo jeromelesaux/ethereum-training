@@ -92,7 +92,7 @@ func main() {
 	authorized.Use(controller.AuthorizeRequest(), header.NocacheHeaders())
 	authorized.POST("/anchor", controller.Anchoring)
 	authorized.POST("/anchormultiple", controller.AnchorMultiple)
-	authorized.GET("/txhash", controller.GetFile)
+	authorized.GET("/txhash/:txhash", controller.GetFile)
 	authorized.GET("/safebox", controller.Safebox)
 	authorized.GET("/certification", controller.Certification)
 

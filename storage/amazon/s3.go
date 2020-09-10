@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -54,4 +55,27 @@ func getSession(region string) (err error) {
 		})
 	})
 	return err
+}
+
+func Download(filePath, region, bucket string) (string, error) {
+	if err := getSession(region); err != nil {
+		return "", err
+	}
+	downFile, err := os.Create(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer downFile.Close()
+
+	downloader := s3manager.NewDownloader(awsSession)
+
+	_, err = downloader.Download(downFile,
+		&s3.GetObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String(filePath),
+		})
+	if err != nil {
+		return "", err
+	}
+	return filePath, nil
 }

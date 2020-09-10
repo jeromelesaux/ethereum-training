@@ -11,3 +11,10 @@ func StoreFile(oldFile, filename, hexa256, email, region, bucket string, storeLo
 	}
 	return amazon.Upload(oldFile, region, bucket)
 }
+
+func GetFile(directoryPath, region, bucket string, storeLocally bool) (filePath string, err error) {
+	if storeLocally {
+		return local.GetLocalFile(directoryPath)
+	}
+	return amazon.Download(directoryPath, region, bucket)
+}
