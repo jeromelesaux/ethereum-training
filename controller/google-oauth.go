@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/gin-gonic/contrib/sessions"
@@ -83,7 +84,7 @@ func (ctr *Controller) AuthHandler(c *gin.Context) {
 func (ctr *Controller) LoginHandler(c *gin.Context) {
 	fmt.Fprintf(os.Stdout, "Enter in Login handler.\n")
 
-	from := c.Request.Header.Get("Referer")
+	from := c.Query("from")
 	state, err := token.RandToken(32)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.tmpl", gin.H{"message": "Error while generating random data."})
@@ -161,9 +162,12 @@ func (ctr *Controller) AuthorizeRequest() gin.HandlerFunc {
 		session := sessions.Default(c)
 		v := session.Get("user-id")
 		if v == nil {
+			fullpath := c.FullPath()
+
+			fmt.Fprintf(os.Stdout, "fullpath:[%s]\n", fullpath)
 			//	referer := c.Request.URL.Scheme + c.Request.Host + c.Request.RequestURI
 			//	c.Request.Header.Set("Referer", referer)
-			c.Redirect(http.StatusTemporaryRedirect, "/login")
+			c.Redirect(http.StatusTemporaryRedirect, "/login?from="+url.QueryEscape(fullpath))
 			c.Abort()
 		}
 
