@@ -220,6 +220,7 @@ function handleDrop(e) {
 
 let uploadProgress = []
 let progressBar = document.getElementById('progress-bar')
+progressBar.style.visibility = "hidden"
 
 function initializeProgress(numFiles) {
   progressBar.value = 0
