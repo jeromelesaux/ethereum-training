@@ -104,8 +104,7 @@ func DownloadBuffer(filePath, region, bucket string) ([]byte, error) {
 	if err := getSession(region); err != nil {
 		return nil, err
 	}
-	buffer := make([]byte, 0)
-	wbuffer := aws.NewWriteAtBuffer(buffer)
+	wbuffer := aws.NewWriteAtBuffer([]byte{})
 	downloader := s3manager.NewDownloader(awsSession)
 
 	n, err := downloader.Download(wbuffer,
@@ -117,7 +116,8 @@ func DownloadBuffer(filePath, region, bucket string) ([]byte, error) {
 		return nil, err
 	}
 	if n == 0 {
-		return buffer, fmt.Errorf("Expected content file superior to 0 for filepath %s", filePath)
+		return wbuffer.Bytes(), fmt.Errorf("Expected content file superior to 0 for filepath %s", filePath)
 	}
-	return buffer, nil
+	fmt.Fprintf(os.Stdout, "[%s] file size %d received and content buffer %d\n", filePath, n, len(wbuffer.Bytes()))
+	return wbuffer.Bytes(), nil
 }
