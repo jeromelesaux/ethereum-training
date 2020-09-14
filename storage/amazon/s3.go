@@ -1,8 +1,8 @@
 package amazon
 
 import (
-	"bufio"
 	"bytes"
+	"fmt"
 	"net/http"
 	"os"
 	"sync"
@@ -101,11 +101,14 @@ func Download(filePath, region, bucket string) (string, error) {
 }
 
 func DownloadBuffer(filePath, region, bucket string) ([]byte, error) {
-	buffer := bytes.NewBuffer(nil)
-	wbuffer := &S3WriterClose{bufio.NewWriter(buffer)}
+	if err := getSession(region); err != nil {
+		return nil, err
+	}
+	buffer := make([]byte, 0)
+	wbuffer := aws.NewWriteAtBuffer(buffer)
 	downloader := s3manager.NewDownloader(awsSession)
 
-	_, err := downloader.Download(wbuffer,
+	n, err := downloader.Download(wbuffer,
 		&s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String(filePath),
@@ -113,18 +116,8 @@ func DownloadBuffer(filePath, region, bucket string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return buffer.Bytes(), nil
-}
-
-type S3WriterClose struct {
-	*bufio.Writer
-}
-
-func (s *S3WriterClose) Close() error {
-	// Noop
-	return s.Flush()
-}
-
-func (s *S3WriterClose) WriteAt(p []byte, off int64) (n int, err error) {
-	return s.WriteAt(p, off)
+	if n == 0 {
+		return buffer, fmt.Errorf("Expected content file superior to 0 for filepath %s", filePath)
+	}
+	return buffer, nil
 }
