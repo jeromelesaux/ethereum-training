@@ -296,9 +296,9 @@ function uploadFile(file, i) {
     }
     else if (xhr.readyState == 4 && xhr.status != 200) {
       // Error. Inform the user
-      raiseAlert(xhr.response.error)
+      raiseAlert(xhr.responseJSON.message)
     } else {
-    raiseAlert(xhr.response.error)
+    raiseAlert(xhr.responseJSON.message)
     }
   })
 

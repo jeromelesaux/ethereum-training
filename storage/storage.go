@@ -17,6 +17,13 @@ func StoreFile(oldFile, filename, hexa256, email, region, bucket string, storeLo
 	return amazon.Upload(oldFile, region, bucket)
 }
 
+func StoreFileBuffer(fileBuffer []byte, filename, filePath, hexa256, email, region, bucket string, storeLocally bool) (err error) {
+	if storeLocally {
+		return local.StoreLocalFileBuffer(fileBuffer, filename, hexa256, email)
+	}
+	return amazon.UploadBuffer(fileBuffer, filePath, region, bucket)
+}
+
 func GetFile(filename, hash, region, bucket string, storeLocally bool) (string, error) {
 	filePath := GetFilepath(filename, hash, storeLocally)
 	fmt.Fprintf(os.Stdout, "filepath [%s]\n", filePath)
@@ -24,6 +31,15 @@ func GetFile(filename, hash, region, bucket string, storeLocally bool) (string, 
 		return filePath, nil
 	}
 	return amazon.Download(filePath, region, bucket)
+}
+
+func GetFileBuffer(filename, hash, region, bucket string, storeLocally bool) ([]byte, error) {
+	filePath := GetFilepath(filename, hash, storeLocally)
+	fmt.Fprintf(os.Stdout, "filepath [%s]\n", filePath)
+	if storeLocally {
+		return local.GetLocalFileBuffer(filePath)
+	}
+	return amazon.DownloadBuffer(filePath, region, bucket)
 }
 
 func GetFilepath(filename, hash string, storeLocally bool) string {

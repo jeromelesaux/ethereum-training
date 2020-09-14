@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -40,27 +41,25 @@ type Controller struct {
 func (ctr *Controller) Anchoring(c *gin.Context) {
 
 	// get the file from multipart form
-	f, err := c.FormFile("file")
+	ff, header, err := c.Request.FormFile("file")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error while getting file multipart header. error :%v\n", err)
 		sendJsonError(c, err.Error(), err)
 		return
 	}
 
-	outfile := filepath.Join(config.MyConfig.GetFilepaths(), f.Filename)
-	// save the file on system
-	err = c.SaveUploadedFile(f, outfile)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Can not save file on system with error :%v\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err,
-		})
+	filePath := filepath.Join(config.MyConfig.GetFilepaths(), header.Filename)
+	// save the file in memory
+	buffer := bytes.NewBuffer(nil)
+	if _, err := io.Copy(buffer, ff); err != nil {
+		fmt.Fprintf(os.Stderr, "Error cannot copy file in memory. error :%v\n", err)
+		sendJsonError(c, err.Error(), err)
 		return
 	}
 
-	sum256, hexa256, err := getSha256(outfile)
+	sum256, hexa256, err := getBufferSha256(buffer.Bytes())
 	if err != nil {
-		sendJsonError(c, "Can not get the sha256 for file "+f.Filename, err)
+		sendJsonError(c, "Can not get the sha256 for file "+header.Filename, err)
 		return
 	}
 
@@ -70,9 +69,9 @@ func (ctr *Controller) Anchoring(c *gin.Context) {
 	s3Region := config.MyConfig.AwsS3Region
 	s3Bucket := config.MyConfig.AwsS3Bucket
 
-	if err = storage.StoreFile(outfile, f.Filename, hexa256, email.(string), s3Region, s3Bucket, useLocalStorage); err != nil {
+	if err = storage.StoreFileBuffer(buffer.Bytes(), header.Filename, filePath, hexa256, email.(string), s3Region, s3Bucket, useLocalStorage); err != nil {
 		if err != nil {
-			sendJsonError(c, "Error cannot store file on local storage "+f.Filename, err)
+			sendJsonError(c, "Error cannot store file on local storage "+header.Filename, err)
 			return
 		}
 	}
@@ -85,7 +84,7 @@ func (ctr *Controller) Anchoring(c *gin.Context) {
 	err = persistence.InsertDocument(persistence.NewDocument(
 		email.(string),
 		time.Now(),
-		f.Filename,
+		header.Filename,
 		hexa256,
 		txHash,
 	))
@@ -96,7 +95,7 @@ func (ctr *Controller) Anchoring(c *gin.Context) {
 	// return json ok result
 	c.JSON(http.StatusOK, gin.H{
 		"tx":      txHash,
-		"message": "Document " + f.Filename + " belongs to  " + email.(string) + " and is certified",
+		"message": "Document " + header.Filename + " belongs to  " + email.(string) + " and is certified",
 	})
 	return
 }
@@ -351,7 +350,7 @@ func (ctr *Controller) GetFile(c *gin.Context) {
 		return
 	}
 	file := docs[0].DocumentName
-	filePath, err := storage.GetFile(
+	fileContent, err := storage.GetFileBuffer(
 		file,
 		hashInBlockChain,
 		config.MyConfig.AwsS3Region,
@@ -378,7 +377,10 @@ func (ctr *Controller) GetFile(c *gin.Context) {
 	c.Header("Content-Transfer-Encoding", "binary")
 	c.Header("Content-Disposition", "attachment; filename="+file)
 	c.Header("Content-Type", "application/octet-stream")
-	c.File(filePath)
+	// utiliser c.Data() au lien de c.File()
+	c.Data(http.StatusOK, "application/octet-stream", fileContent)
+	//c.File(filePath)
+	return
 }
 
 func readFromFile(filePath string) (content []merkleHexa, err error) {
@@ -477,6 +479,23 @@ func sendTransaction(data, user []byte) (string, error) {
 	fmt.Printf("tx sent: %s", signedTx.Hash().Hex())
 	// return json ok result
 	return signedTx.Hash().Hex(), nil
+}
+
+func getBufferSha256(buffer []byte) ([]byte, string, error) {
+	// compute sha256 sum
+	h := sha256.New()
+	if _, err := h.Write(buffer); err != nil {
+		fmt.Fprintf(os.Stderr, "Can not read file from system with error :%v\n", err)
+		return []byte{}, "", err
+	}
+
+	sum256 := h.Sum(nil)
+	hexaSum := fmt.Sprintf("%x", sum256)
+	// ok display result
+	fmt.Fprintf(os.Stderr, "filebuffer has sha256 [%s]\n",
+		hexaSum)
+
+	return sum256, hexaSum, nil
 }
 
 func getSha256(filePath string) ([]byte, string, error) {
