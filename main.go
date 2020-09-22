@@ -97,7 +97,7 @@ func main() {
 	authorized.GET("/certification", controller.Certification)
 
 	// start server at port 8080
-	if err := router.Run(":8080"); err != nil {
+	if err := router.Run(":" + config.MyConfig.ListenPort); err != nil {
 		fmt.Fprintf(os.Stderr, "Can not start server error :%v\n", err)
 		os.Exit(-1)
 	}

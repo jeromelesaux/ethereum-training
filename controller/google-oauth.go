@@ -135,12 +135,12 @@ func LoadCredentialsEnv() {
 		log.Printf("No google credentials found. Aborting...")
 		os.Exit(1)
 	}
-	serverURL := config.MyConfig.ServerURL
+	callbackUrl := config.MyConfig.CallbackUrl
 
 	conf = &oauth2.Config{
 		ClientID:     cid,
 		ClientSecret: csecret,
-		RedirectURL:  serverURL + "/auth",
+		RedirectURL:  callbackUrl + "/auth",
 		Scopes: []string{
 			"https://www.googleapis.com/auth/userinfo.email", // You have to select your own scope from here -> https://developers.google.com/identity/protocols/googlescopes#google_sign-in
 		},
@@ -158,12 +158,12 @@ func LoadCredentials() {
 		log.Println("unable to marshal data")
 		return
 	}
-	serverURL := config.MyConfig.ServerURL
+	callbackUrl := config.MyConfig.CallbackUrl
 
 	conf = &oauth2.Config{
 		ClientID:     cred.Cid,
 		ClientSecret: cred.Csecret,
-		RedirectURL:  serverURL + "/auth",
+		RedirectURL:  callbackUrl + "/auth",
 		Scopes: []string{
 			"https://www.googleapis.com/auth/userinfo.email", // You have to select your own scope from here -> https://developers.google.com/identity/protocols/googlescopes#google_sign-in
 		},
