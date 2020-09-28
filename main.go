@@ -41,7 +41,12 @@ func main() {
 
 	}
 	controller.LoadCredentials()
-	if err := persistence.Initialise(); err != nil {
+	localStorage := config.MyConfig.UseLocalStorage
+	awsRegion := config.MyConfig.AwsS3Region
+	dbEndpoint := config.MyConfig.DbEndpoint
+	dbUser := config.MyConfig.DbUser
+	dbName := config.MyConfig.DbName
+	if err := persistence.Initialise(localStorage, dbEndpoint, awsRegion, dbUser, dbName); err != nil {
 		fmt.Fprintf(os.Stderr, "Error while initialise the database with error (%v)\n", err)
 		os.Exit(-1)
 	}

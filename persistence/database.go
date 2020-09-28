@@ -6,17 +6,47 @@ import (
 	"os"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/jeromelesaux/ethereum-training/persistence/amazon"
+	"github.com/jeromelesaux/ethereum-training/persistence/local"
 )
 
 var db *sql.DB
+var (
+	_dbEndpoint string
+	_awsRegion  string
+	_dbUser     string
+	_dbName     string
 
-func Initialise() error {
+	_useLocal bool
+)
+
+func Initialise(useLocal bool, dbEndpoint, awsRegion, dbUser, dbName string) error {
+	_dbEndpoint = dbEndpoint
+	_awsRegion = awsRegion
+	_dbUser = dbUser
+	_dbName = dbName
+	_useLocal = useLocal
 	if err := connect(); err != nil {
 		return err
 	}
 	if err := createSchema(); err != nil {
 		return err
+	}
+	return nil
+}
+
+func connect() error {
+	var err error
+	if _useLocal {
+		db, err = local.ConnectSqlite()
+		if err != nil {
+			return err
+		}
+	} else {
+		db, err = amazon.ConnectRds(_dbEndpoint, _awsRegion, _dbUser, _dbName)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -37,14 +67,6 @@ func NewDocument(userId string, created time.Time, documentName, checksum, txhas
 		Checksum:     checksum,
 		TxHash:       txhash,
 	}
-}
-
-func connect() (err error) {
-	db, err = sql.Open("sqlite3", "ethereum.db")
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func createSchema() error {

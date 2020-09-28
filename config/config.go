@@ -22,6 +22,9 @@ type Configuration struct {
 	AwsS3Region       string `json:"awss3region"`
 	AwsS3Bucket       string `json:"awss3bucket"`
 	ListenPort        string `json:"listenport"`
+	DbUser            string `json:"rdsuser"`
+	DbName            string `json:"rdsname"`
+	DbEndpoint        string `json:"rdsendpoint"`
 }
 
 var (
