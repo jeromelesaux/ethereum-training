@@ -1,6 +1,10 @@
 package local
 
-import "database/sql"
+import (
+	"database/sql"
+
+	_ "github.com/mattn/go-sqlite3"
+)
 
 func ConnectSqlite() (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", "ethereum.db")
