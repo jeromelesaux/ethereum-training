@@ -43,7 +43,7 @@ func connect() error {
 			return err
 		}
 	} else {
-		db, err = amazon.ConnectRds(_dbEndpoint, _awsRegion, _dbUser, _dbName)
+		db, err = amazon.ConnectRds(_dbEndpoint, _awsRegion, _dbUser, _dbName, db)
 		if err != nil {
 			return err
 		}
