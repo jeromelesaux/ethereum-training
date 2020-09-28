@@ -1,34 +1,76 @@
 package amazon
 
 import (
+	"context"
 	"database/sql"
-	"fmt"
+	"database/sql/driver"
+	"errors"
+	"net/url"
 	"sync"
-
-	_ "github.com/lib/pq"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/rds/rdsutils"
+	"github.com/jackc/pgx/stdlib"
+	"github.com/jmoiron/sqlx"
 )
 
 var awsCreds *credentials.Credentials
 var loadCredential sync.Once
 
-func ConnectRds(dbEndpoint, awsRegion, dbUser, dbName string) (*sql.DB, error) {
+type awsRdsDb struct {
+	dbEndpoint string
+	dbUser     string
+	dbName     string
+	awsRegion  string
+}
+
+func (a *awsRdsDb) Connect(ctx context.Context) (driver.Conn, error) {
 
 	awsCreds = credentials.NewEnvCredentials()
-	authToken, err := rdsutils.BuildAuthToken(dbEndpoint, awsRegion, dbUser, awsCreds)
+	authToken, err := rdsutils.BuildAuthToken(a.dbEndpoint, a.awsRegion, a.dbUser, awsCreds)
 	if err != nil {
 		return nil, err
 	}
-	dnsStr := fmt.Sprintf("%s:%s@tcp(%s)/%s?tls=true",
-		dbUser, authToken, dbEndpoint, dbName,
-	)
-	// Use db to perform SQL operations on database
-	db, err := sql.Open("postgres", dnsStr)
+
+	psqlURL, err := url.Parse("postgres://")
 	if err != nil {
-		return db, err
+		return nil, err
 	}
 
-	return db, nil
+	psqlURL.Host = a.dbEndpoint
+	psqlURL.User = url.UserPassword(a.dbUser, authToken)
+	psqlURL.Path = a.dbName
+	q := psqlURL.Query()
+	q.Add("sslmode", "true")
+
+	psqlURL.RawQuery = q.Encode()
+	pgxDriver := &stdlib.Driver{}
+	connector, err := pgxDriver.OpenConnector(psqlURL.String())
+	if err != nil {
+		return nil, err
+	}
+
+	return connector.Connect(ctx)
+}
+
+func (a *awsRdsDb) Driver() driver.Driver {
+	return a
+}
+
+var DriverNotSupportedErr = errors.New("driver open method not supported")
+
+// driver.Driver interface
+func (config *awsRdsDb) Open(name string) (driver.Conn, error) {
+	return nil, DriverNotSupportedErr
+}
+
+func ConnectRds(dbEndpoint, awsRegion, dbUser, dbName string) *sqlx.DB {
+	aDb := &awsRdsDb{
+		awsRegion:  awsRegion,
+		dbEndpoint: dbEndpoint,
+		dbUser:     dbUser,
+		dbName:     dbName,
+	}
+	db := sql.OpenDB(aDb)
+	return sqlx.NewDb(db, "pgx")
 }

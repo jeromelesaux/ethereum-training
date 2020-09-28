@@ -8,24 +8,26 @@ import (
 
 	"github.com/jeromelesaux/ethereum-training/persistence/amazon"
 	"github.com/jeromelesaux/ethereum-training/persistence/local"
+	"github.com/jmoiron/sqlx"
 )
 
 var db *sql.DB
+var dbx *sqlx.DB
 var (
 	_dbEndpoint string
 	_awsRegion  string
 	_dbUser     string
 	_dbName     string
 
-	_useLocal bool
+	_useSqlite bool
 )
 
-func Initialise(useLocal bool, dbEndpoint, awsRegion, dbUser, dbName string) error {
+func Initialise(useSqlite bool, dbEndpoint, awsRegion, dbUser, dbName string) error {
 	_dbEndpoint = dbEndpoint
 	_awsRegion = awsRegion
 	_dbUser = dbUser
 	_dbName = dbName
-	_useLocal = useLocal
+	_useSqlite = useSqlite
 	if err := connect(); err != nil {
 		return err
 	}
@@ -37,16 +39,14 @@ func Initialise(useLocal bool, dbEndpoint, awsRegion, dbUser, dbName string) err
 
 func connect() error {
 	var err error
-	if _useLocal {
+	if _useSqlite {
 		db, err = local.ConnectSqlite()
 		if err != nil {
 			return err
 		}
 	} else {
-		db, err = amazon.ConnectRds(_dbEndpoint, _awsRegion, _dbUser, _dbName)
-		if err != nil {
-			return err
-		}
+		dbx = amazon.ConnectRds(_dbEndpoint, _awsRegion, _dbUser, _dbName)
+
 	}
 	return nil
 }
@@ -83,7 +83,14 @@ func createSchema() error {
 	if err := connect(); err != nil {
 		return err
 	}
-	stmt, err := db.Prepare(schema)
+	var stmt *sql.Stmt
+	var err error
+	if _useSqlite {
+		stmt, err = db.Prepare(schema)
+	} else {
+		stmt, err = dbx.Prepare(schema)
+	}
+
 	if err != nil {
 		return err
 	}
