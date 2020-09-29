@@ -18,15 +18,17 @@ var (
 	_awsRegion  string
 	_dbUser     string
 	_dbName     string
+	_dbPassword string
 
 	_useSqlite bool
 )
 
-func Initialise(useSqlite bool, dbEndpoint, awsRegion, dbUser, dbName string) error {
+func Initialise(useSqlite bool, dbEndpoint, awsRegion, dbUser, dbName, dbpassword string) error {
 	_dbEndpoint = dbEndpoint
 	_awsRegion = awsRegion
 	_dbUser = dbUser
 	_dbName = dbName
+	_dbPassword = dbpassword
 	_useSqlite = useSqlite
 	if err := connect(); err != nil {
 		return err
@@ -45,7 +47,7 @@ func connect() error {
 			return err
 		}
 	} else {
-		dbx = amazon.ConnectRds(_dbEndpoint, _awsRegion, _dbUser, _dbName)
+		dbx = amazon.ConnectRds(_dbEndpoint, _awsRegion, _dbUser, _dbName, _dbPassword)
 
 	}
 	return nil
@@ -77,7 +79,15 @@ func createSchema() error {
 		"document varchar(64), " +
 		"checksum varchar(64), " +
 		"txhash varchar(64));"
-
+	if !_useSqlite {
+		schema = "create table if not exists 'documents' (" +
+			"uid serial primary key , " +
+			"userid varchar(64), " +
+			"created date null, " +
+			"document varchar(64), " +
+			"checksum varchar(64), " +
+			"txhash varchar(64));"
+	}
 	fmt.Fprintf(os.Stdout, "%s\n", schema)
 
 	if err := connect(); err != nil {
@@ -104,9 +114,17 @@ func InsertDocument(document *Document) error {
 	if err := connect(); err != nil {
 		return err
 	}
-	tx, err := db.Begin()
-	if err != nil {
-		return err
+	var err error
+	var tx *sql.Tx
+
+	if _useSqlite {
+		tx, err = db.Begin()
+
+		if err != nil {
+			return err
+		}
+	} else {
+		tx, err = dbx.Begin()
 	}
 	query := "insert into documents(userid,created,document,checksum,txhash) values('" +
 		document.UserID + "','" +
@@ -140,9 +158,17 @@ func GetDocuments(userID string) (docs []*Document, err error) {
 	query := "select userid,created,document,checksum,txhash from documents where userid = '" +
 		userID + "';"
 
-	res, err := db.Query(query)
-	if err != nil {
-		return docs, err
+	var res *sql.Rows
+	if _useSqlite {
+		res, err = db.Query(query)
+		if err != nil {
+			return docs, err
+		}
+	} else {
+		res, err = dbx.Query(query)
+		if err != nil {
+			return docs, err
+		}
 	}
 
 	for res.Next() {
@@ -174,9 +200,17 @@ func GetDocumentsByName(filename string) (docs []*Document, err error) {
 	query := "select userid,created,document,checksum,txhash from documents where document = '" +
 		filename + "';"
 
-	res, err := db.Query(query)
-	if err != nil {
-		return docs, err
+	var res *sql.Rows
+	if _useSqlite {
+		res, err = db.Query(query)
+		if err != nil {
+			return docs, err
+		}
+	} else {
+		res, err = dbx.Query(query)
+		if err != nil {
+			return docs, err
+		}
 	}
 
 	for res.Next() {
@@ -208,9 +242,17 @@ func GetDocumentsByChecksum(checksum string) (docs []*Document, err error) {
 	query := "select userid,created,document,checksum,txhash from documents where checksum = '" +
 		checksum + "';"
 
-	res, err := db.Query(query)
-	if err != nil {
-		return docs, err
+	var res *sql.Rows
+	if _useSqlite {
+		res, err = db.Query(query)
+		if err != nil {
+			return docs, err
+		}
+	} else {
+		res, err = dbx.Query(query)
+		if err != nil {
+			return docs, err
+		}
 	}
 
 	for res.Next() {

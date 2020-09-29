@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/service/rds/rdsutils"
 	"github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
 )
@@ -21,27 +20,28 @@ type awsRdsDb struct {
 	dbEndpoint string
 	dbUser     string
 	dbName     string
+	dbPassword string
 	awsRegion  string
 }
 
 func (a *awsRdsDb) Connect(ctx context.Context) (driver.Conn, error) {
 
-	awsCreds = credentials.NewEnvCredentials()
-	authToken, err := rdsutils.BuildAuthToken(a.dbEndpoint, a.awsRegion, a.dbUser, awsCreds)
-	if err != nil {
-		return nil, err
-	}
+	//awsCreds = credentials.NewEnvCredentials()
+	// authToken, err := rdsutils.BuildAuthToken(a.dbEndpoint, a.awsRegion, a.dbUser, awsCreds)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	psqlURL, err := url.Parse("postgres://")
 	if err != nil {
 		return nil, err
 	}
 
-	psqlURL.Host = a.dbEndpoint
-	psqlURL.User = url.UserPassword(a.dbUser, authToken)
+	psqlURL.Host = a.dbEndpoint + ":5432"
+	psqlURL.User = url.UserPassword(a.dbUser, a.dbPassword)
 	psqlURL.Path = a.dbName
 	q := psqlURL.Query()
-	q.Add("sslmode", "true")
+	q.Add("sslmode", "disable")
 
 	psqlURL.RawQuery = q.Encode()
 	pgxDriver := &stdlib.Driver{}
@@ -64,12 +64,13 @@ func (config *awsRdsDb) Open(name string) (driver.Conn, error) {
 	return nil, DriverNotSupportedErr
 }
 
-func ConnectRds(dbEndpoint, awsRegion, dbUser, dbName string) *sqlx.DB {
+func ConnectRds(dbEndpoint, awsRegion, dbUser, dbName, dbPassword string) *sqlx.DB {
 	aDb := &awsRdsDb{
 		awsRegion:  awsRegion,
 		dbEndpoint: dbEndpoint,
 		dbUser:     dbUser,
 		dbName:     dbName,
+		dbPassword: dbPassword,
 	}
 	db := sql.OpenDB(aDb)
 	return sqlx.NewDb(db, "pgx")

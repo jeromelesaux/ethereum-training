@@ -46,7 +46,8 @@ func main() {
 	dbEndpoint := config.MyConfig.DbEndpoint
 	dbUser := config.MyConfig.DbUser
 	dbName := config.MyConfig.DbName
-	if err := persistence.Initialise(localStorage, dbEndpoint, awsRegion, dbUser, dbName); err != nil {
+	dbPassword := config.MyConfig.DbPassword
+	if err := persistence.Initialise(localStorage, dbEndpoint, awsRegion, dbUser, dbName, dbPassword); err != nil {
 		fmt.Fprintf(os.Stderr, "Error while initialise the database with error (%v)\n", err)
 		os.Exit(-1)
 	}

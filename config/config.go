@@ -24,6 +24,7 @@ type Configuration struct {
 	ListenPort        string `json:"listenport"`
 	DbUser            string `json:"rdsuser"`
 	DbName            string `json:"rdsname"`
+	DbPassword        string `json:"rdspassword"`
 	DbEndpoint        string `json:"rdsendpoint"`
 }
 
