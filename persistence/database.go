@@ -127,8 +127,8 @@ func InsertDocument(document *Document) error {
 		tx, err = dbx.Begin()
 	}
 	query := "insert into documents(userid,created,document,checksum,txhash) values('" +
-		document.UserID + "','" +
-		document.Created.String() + "','" +
+		document.UserID + "',?,'" +
+		//	document.Created.String() + ",'" +
 		document.DocumentName + "','" +
 		document.Checksum + "','" +
 		document.TxHash + "'" +
@@ -141,7 +141,7 @@ func InsertDocument(document *Document) error {
 		return err
 	}
 
-	_, err = insert.Exec()
+	_, err = insert.Exec(document.Created)
 	if err != nil {
 		tx.Rollback()
 		return err

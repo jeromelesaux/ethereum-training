@@ -37,7 +37,7 @@ func (a *awsRdsDb) Connect(ctx context.Context) (driver.Conn, error) {
 		return nil, err
 	}
 
-	psqlURL.Host = a.dbEndpoint + ":5432"
+	psqlURL.Host = a.dbEndpoint
 	psqlURL.User = url.UserPassword(a.dbUser, a.dbPassword)
 	psqlURL.Path = a.dbName
 	q := psqlURL.Query()
