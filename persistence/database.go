@@ -80,7 +80,7 @@ func createSchema() error {
 		"checksum varchar(64), " +
 		"txhash varchar(64));"
 	if !_useSqlite {
-		schema = "create table if not exists 'documents' (" +
+		schema = "create table if not exists documents (" +
 			"uid serial primary key , " +
 			"userid varchar(64), " +
 			"created date null, " +
