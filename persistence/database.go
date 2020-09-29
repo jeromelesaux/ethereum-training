@@ -76,17 +76,17 @@ func createSchema() error {
 		"uid integer primary key autoincrement, " +
 		"userid varchar(64), " +
 		"created date null, " +
-		"document varchar(64), " +
-		"checksum varchar(64), " +
-		"txhash varchar(64));"
+		"document varchar(128), " +
+		"checksum varchar(128), " +
+		"txhash varchar(128));"
 	if !_useSqlite {
 		schema = "create table if not exists documents (" +
 			"uid serial primary key , " +
 			"userid varchar(64), " +
 			"created date null, " +
-			"document varchar(64), " +
-			"checksum varchar(64), " +
-			"txhash varchar(64));"
+			"document varchar(128), " +
+			"checksum varchar(128), " +
+			"txhash varchar(128));"
 	}
 	fmt.Fprintf(os.Stdout, "%s\n", schema)
 
@@ -127,8 +127,8 @@ func InsertDocument(document *Document) error {
 		tx, err = dbx.Begin()
 	}
 	query := "insert into documents(userid,created,document,checksum,txhash) values('" +
-		document.UserID + "',?,'" +
-		//	document.Created.String() + ",'" +
+		document.UserID + "','" +
+		document.Created.Format(time.RFC3339) + "','" +
 		document.DocumentName + "','" +
 		document.Checksum + "','" +
 		document.TxHash + "'" +
