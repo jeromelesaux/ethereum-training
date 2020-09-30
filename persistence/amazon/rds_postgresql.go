@@ -16,6 +16,9 @@ import (
 var awsCreds *credentials.Credentials
 var loadCredential sync.Once
 
+//
+// hint : https://github.com/califlower/golang-aws-rds-iam-postgres
+//
 type awsRdsDb struct {
 	dbEndpoint string
 	dbUser     string

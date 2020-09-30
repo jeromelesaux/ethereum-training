@@ -141,7 +141,7 @@ func InsertDocument(document *Document) error {
 		return err
 	}
 
-	_, err = insert.Exec(document.Created)
+	_, err = insert.Exec()
 	if err != nil {
 		tx.Rollback()
 		return err
