@@ -157,7 +157,7 @@
                     <form id="verifyOnFile" class="my-form" action="/api/anchor" method="POST" enctype="multipart/form-data">
                     <center>
                     <img src="/upload.png" width="100px"><br>
-                    <input type="file" id="fileElem" multiple accept="*/*" onchange="handleFiles(this.files)">
+                    <input type="file" id="fileElem" accept="image/*,.pdf,application/msword, application/pdf" onchange="handleFiles(this.files)">
                     <label class="button" class="btn btn-primary" for="fileElem">Certify your document.</label>
                     </center>
                     </form>
