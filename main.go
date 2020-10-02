@@ -88,6 +88,7 @@ func main() {
 	router.GET("/logout", controller.LogoutHandler)
 	router.GET("/auth", controller.AuthHandler)
 	router.GET("/verification", controller.Verification)
+	router.GET("/documents", controller.GetDocuments)
 	// add static html route
 	root := router.Group("/")
 	root.GET("/", func(c *gin.Context) {

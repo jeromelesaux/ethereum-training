@@ -322,6 +322,21 @@ func (ctr *Controller) VerifyMultiple(c *gin.Context) {
 	return
 }
 
+func (ctr *Controller) GetDocuments(c *gin.Context) {
+
+	session := sessions.Default(c)
+	email := session.Get("user-id")
+
+	docs, err := persistence.GetDocumentsByUser(email.(string))
+	if err != nil {
+		sendJsonError(c, err.Error(), err)
+		return
+	}
+	c.BindJSON(docs)
+	c.JSON(http.StatusOK, nil)
+	return
+}
+
 func (ctr *Controller) GetFile(c *gin.Context) {
 	txhash := c.Param("txhash")
 

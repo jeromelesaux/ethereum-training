@@ -128,7 +128,7 @@ func InsertDocument(document *Document) error {
 	}
 	query := "insert into documents(userid,created,document,checksum,txhash) values('" +
 		document.UserID + "','" +
-		document.Created.Format(time.RFC3339) + "','" +
+		document.Created.Add(time.Hour*2).Format(time.RFC3339) + "','" +
 		document.DocumentName + "','" +
 		document.Checksum + "','" +
 		document.TxHash + "'" +
@@ -267,6 +267,48 @@ func GetDocumentsByChecksum(checksum string) (docs []*Document, err error) {
 				created,
 				document,
 				checksum,
+				txhash,
+			))
+		}
+
+	}
+	res.Close()
+	return docs, nil
+}
+
+func GetDocumentsByUser(userid string) (docs []*Document, err error) {
+	docs = make([]*Document, 0)
+	if err := connect(); err != nil {
+		return docs, err
+	}
+	query := "select created,document,txhash from documents where uuid = '" +
+		userid + "';"
+
+	var res *sql.Rows
+	if _useSqlite {
+		res, err = db.Query(query)
+		if err != nil {
+			return docs, err
+		}
+	} else {
+		res, err = dbx.Query(query)
+		if err != nil {
+			return docs, err
+		}
+	}
+
+	for res.Next() {
+		var document, txhash string
+		var created time.Time
+		err = res.Scan(&created, &document, &txhash)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error while getting row from sql (%v)\n", err)
+		} else {
+			docs = append(docs, NewDocument(
+				userid,
+				created,
+				document,
+				"",
 				txhash,
 			))
 		}
