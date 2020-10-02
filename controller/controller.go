@@ -332,8 +332,7 @@ func (ctr *Controller) GetDocuments(c *gin.Context) {
 		sendJsonError(c, err.Error(), err)
 		return
 	}
-	c.BindJSON(docs)
-	c.JSON(http.StatusOK, nil)
+	c.JSON(http.StatusOK, docs)
 	return
 }
 

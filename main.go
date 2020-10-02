@@ -88,7 +88,7 @@ func main() {
 	router.GET("/logout", controller.LogoutHandler)
 	router.GET("/auth", controller.AuthHandler)
 	router.GET("/verification", controller.Verification)
-	router.GET("/documents", controller.GetDocuments)
+
 	// add static html route
 	root := router.Group("/")
 	root.GET("/", func(c *gin.Context) {
@@ -102,6 +102,7 @@ func main() {
 	authorized.GET("/txhash/:txhash", controller.GetFile)
 	authorized.GET("/safebox", controller.Safebox)
 	authorized.GET("/certification", controller.Certification)
+	authorized.GET("/documents", controller.GetDocuments)
 
 	// start server at port 8080
 	if err := router.Run(":" + config.MyConfig.ListenPort); err != nil {

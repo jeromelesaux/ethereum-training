@@ -281,7 +281,7 @@ func GetDocumentsByUser(userid string) (docs []*Document, err error) {
 	if err := connect(); err != nil {
 		return docs, err
 	}
-	query := "select created,document,txhash from documents where uuid = '" +
+	query := "select created,document,txhash from documents where userid = '" +
 		userid + "';"
 
 	var res *sql.Rows
