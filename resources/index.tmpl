@@ -10,9 +10,24 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+     <style>
+        * {
+            font-family: /* system-ui,-apple-system,"Segoe UI", */ Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+        }
+        header {
+            line-height: 50px;
+        }
+    </style>
+
 </head>
 
 <body>
+  <header class="d-flex justify-content-between bd-highlight mb-3 border-bottom shadow-sm bg-light">
+        <div class="p-2 bd-highlight"><img height="50px" src="logo-innovation-lab-v2.png" /></div>
+        <div class="p-2 bd-highlight"><a href="/">BTrust &gt; <strong>HOME</strong></a></div>
+        <div class="p-2 bd-highlight"><img height="50px" src="https://blog.webnet.fr/wp-content/uploads/2019/02/ethereum-logo.png"/></div>
+    </header>
+
     <script lang="javascript">
 
         $(document).on('change', '.custom-file-input', function (event) {
@@ -143,17 +158,60 @@
                 <a class="nav-item nav-link active" href="#home" data-toggle="tab">Home</a>
             </nav>
             <center>
-                        <img width="100px" src="https://blog.webnet.fr/wp-content/uploads/2019/02/ethereum-logo.png">
+                        
 
-                        <img width="200px" src="logo-innovation-lab-v2.png">
-                        <h2>Welcome to bytel documents Ethereum block chain certifications.</h2>
-                        <br><br>
-                        To access differents services : 
-                        <ul class="list-group">
-                        <li class="list-group-item"><a href="/verification">Verify your document</a></li>
-                        <li class="list-group-item"><a href="/api/certification">Certify your document</a></li>
-                        <li class="list-group-item"><a href="/api/safebox">Access to the safebox</a></li>
-                        </ul>
+                        
+                       <div class="pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
+                            <h1 class="display-4">BTrust</h1>
+                            <p class="lead">Welcome to Bytel documents Ethereum block chain certifications.<br />
+                                To access differents services:</p>
+                            <div id="alerts" class="alert alert-danger" role="alert" style="display:none;"></div>
+                        </div>
+
+                         <div class="row row-cols-1 row-cols-md-3 mb-3 text-center">
+            <div class="col">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header">
+                        <h4 class="my-0 fw-normal">Verify</h4>
+                    </div>
+                    <div class="card-body">
+                        <p>Check your document certification. The access is public.</p>
+                        <a href="/verification" class="w-100 btn btn-lg btn-primary">Verify your document</a><!-- btn-outline-primary -->
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header">
+                        <h4 class="my-0 fw-normal">Certify</h4>
+                    </div>
+                    <div class="card-body">
+                        <p>Certify your document in the Ethereum blockchain. A Google authentication is required.</p>
+                        <a href="/api/certification" class="w-100 btn btn-lg btn-primary">Certify your document</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header">
+                        <h4 class="my-0 fw-normal">Access</h4>
+                    </div>
+                    <div class="card-body">
+                        <p>Access to your personnal safebox. A Google authentication is required.</p>
+                        <a href="/api/safebox" class="w-100 btn btn-lg btn-primary">Access to the safebox</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="pt-4 my-md-5 border-top">
+            <div class="row">
+                <div class="col-1 col-md text-center">
+                    <small class="d-block mb-3 text-muted">&copy; Bouygues Telecom 2020</small>
+                </div>
+            </div>
+        </footer>
+
             </center>
        
         </div>

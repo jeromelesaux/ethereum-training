@@ -13,9 +13,74 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.18.0/dist/bootstrap-table.min.css">
     <link rel="stylesheet" href="/uploader.css">
+      <style>
+        * {
+            font-family: /* system-ui,-apple-system,"Segoe UI", */ Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+        }
+        header {
+            line-height: 50px;
+        }
+
+        /* <link rel="stylesheet" href="/uploader.css"> */
+        .note {
+            width: 500px;
+            margin: 50px auto;
+            font-size: 1.1em;
+            color: #333;
+            text-align: justify;
+        }
+        #drop-area {
+            border: 2px dashed #ccc;
+            border-radius: 20px;
+            width: 480px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        #drop-area.highlight {
+            border-color: blue;
+        }
+        p {
+            margin-top: 0;
+        }
+        .my-form {
+            margin-bottom: 10px;
+        }
+        #gallery {
+            margin-top: 10px;
+        }
+        #gallery img {
+            width: 150px;
+            margin-bottom: 10px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px;
+            background: #ccc;
+            cursor: pointer;
+            border-radius: 5px;
+            border: 1px solid blue;
+        }
+        .button:hover {
+            background: #ddd;
+        }
+        #fileElem {
+            display: none;
+        }
+    </style>
+
+
 </head>
 
 <body onload="feedDocuments();">
+
+     <header class="d-flex justify-content-between bd-highlight mb-3 border-bottom shadow-sm bg-light">
+        <div class="p-2 bd-highlight"><img height="50px" src="logo-innovation-lab-v2.png" /></div>
+        <div class="p-2 bd-highlight"><a href="/">BTrust &gt; <strong>VERIFY</strong></a></div>
+        <div class="p-2 bd-highlight"><img height="50px" src="https://blog.webnet.fr/wp-content/uploads/2019/02/ethereum-logo.png"/></div>
+    </header>
+
     <script lang="javascript">
 
         $(document).on('change', '.custom-file-input', function (event) {
@@ -191,25 +256,35 @@
 
 
                 <div class="tab-pane active" id="certificate">
-                    Certify your document..<br>
-                    <button type="button" class="btn btn-primary" onclick="cleanGallery()">Clear</button>
-                    <a class="btn btn-primary" href="/">Return Home</a>
-                    <a class="btn btn-primary" href="/logout">Logout</a>
-                    <br>
-                    Drag and drop the file you want to check in this area bellow.
-                    <div id="drop-area">
-                    <form id="verifyOnFile" class="my-form" action="/api/anchor" method="POST" enctype="multipart/form-data">
-                    <center>
-                    <img src="/upload.png" width="100px"><br>
+
+                      
+                    <div class="pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
+            <p class="lead">Certify your document..<br>
+                Drag and drop the file you want to verify in this area bellow.</p>
+            <div id="alerts" class="alert alert-danger" role="alert" style="display:none;"></div>
+        </div>
+
+        <div id="drop-area">
+            <form id="verifyOnFile" class="my-form" action="/api/anchor" method="POST" enctype="multipart/form-data">
+                <center>
+                    <img src="upload.png" width="100px"><br>
                     <input type="file" id="fileElem" accept="image/*,.pdf,application/msword, application/pdf" onchange="handleFiles(this.files)">
-                    <label class="button" class="btn btn-primary" for="fileElem">Certify.</label>
-                    </center>
-                    </form>
-                      <progress id="progress-bar" max=100 value=0></progress>
-                      <div id="gallery" /></div>
-                    </div>
-                    <div id="checkResponse"> </div>
-                    Yours Documents
+                    <label class="button" class="w-100 btn btn-lg btn-outline-primary" for="fileElem">Validate</label>
+                </center>
+            </form>
+            <progress id="progress-bar" max=100 value=0></progress>
+            <div id="gallery" /></div>
+        </div>
+
+        <div class="text-center">
+            <button type="button" class="btn btn-primary" onclick="cleanGallery()">Clear</button>
+            <a class="btn btn-primary" href="/">Return Home</a>
+        </div>
+
+        <div id="checkResponse">
+        </div>
+         Yours Documents
+                    <div>
                     <table class="table" id="docs">
                       <thead class="thead-dark">
                         <tr>
@@ -222,7 +297,8 @@
                       <tbody>
                       </tbody>
                     </table>
-                </div>
+                    <div>
+         </div>
 
                 <div class="tab-pane" id="getfile">
                     Get your certified file..<br><br><br>
@@ -235,7 +311,15 @@
                     </div>
                     <button type="button" class="btn btn-primary" onclick="getfile()">Get your file</button>
                 </div>
+        <footer class="pt-4 my-md-5 border-top">
+            <div class="row">
+                <div class="col-1 col-md text-center">
+                    <small class="d-block mb-3 text-muted">&copy; Bouygues Telecom 2020</small>
+                </div>
             </div>
+        </footer>
+
+                  
 
         </div>
     </div>
