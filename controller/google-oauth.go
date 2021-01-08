@@ -107,7 +107,8 @@ func (ctr *Controller) LoginHandler(c *gin.Context) {
 
 	link := getLoginURL(buffer.String())
 	fmt.Printf("redirect link is : (%s) and state : (%s)\n", link, state)
-	c.HTML(http.StatusOK, "auth.tmpl", gin.H{"link": link})
+	c.Redirect(http.StatusTemporaryRedirect, link)
+	//c.HTML(http.StatusOK, "auth.tmpl", gin.H{"link": link})
 }
 
 func (ctr *Controller) LogoutHandler(c *gin.Context) {
